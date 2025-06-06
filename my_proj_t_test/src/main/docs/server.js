@@ -480,6 +480,26 @@ async function verifyPayment(imp_uid) {
     }
 }
 
+// 토큰 검증 테스트용
+app.post('/verify-token', async (req, res) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, message: '토큰이 제공되지 않았습니다.' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const uid = decodedToken.uid;
+        return res.json({ success: true, uid });
+    } catch (error) {
+        return res.status(401).json({ success: false, message: '유효하지 않은 토큰입니다.' });
+    }
+});
+
+
 // 서버 시작
 app.listen(PORT, () => {
     console.log(`메인 페이지: http://localhost:${PORT}`);
