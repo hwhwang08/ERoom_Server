@@ -3,7 +3,6 @@
 <head>
     <meta charset="utf-8"/>
     <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png"/>
-    <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>결제 성공 - 크레딧 구매 완료</title>
@@ -186,6 +185,7 @@
                 amount: amount
             };
 
+            // 여기가 404 오류뜨는 지점 같다. !!!!!!
             const response = await fetch("/confirm", {
                 method: "POST",
                 headers: {
@@ -207,6 +207,7 @@
         }
     }
 
+    // 크레딧 구매 정보를 server.js로 보낸다.
     // 크레딧 구매 정보를 지정된 엔드포인트로 전송하는 함수
     async function sendPurchaseInfo(uid, creditAmount, price) {
         try {
@@ -224,7 +225,7 @@
             console.log('구매 정보 전송 데이터:', purchaseData);
 
             // localhost:3000/purchase 엔드포인트로 POST 요청 전송
-            const response = await fetch("http://localhost:3000/purchase", {
+            const response = await fetch("http://localhost:7999/purchase", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
