@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8"/>
+    <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png"/>
+    <link rel="stylesheet" type="text/css" href="css/style.css"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>결제 성공 - 크레딧 구매 완료</title>
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 60px;
+            color: #00c471;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .payment-details {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .detail-value {
+            color: #333;
+            word-break: break-all;
+        }
+
+        .back-button {
+            display: inline-block;
+            background-color: #3182f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            margin-top: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .back-button:hover {
+            background-color: #1c6fdc;
+        }
+
+        .user-highlight {
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-weight: bold;
+            color: #1c6fdc;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="success-icon">✓</div>
+    <h1>결제가 성공적으로 완료되었습니다</h1>
+    <p>크레딧 구매가 완료되었습니다. 곧 계정에 반영됩니다.</p>
+
+    <div class="payment-details">
+        <div class="detail-row">
+            <span class="detail-label">사용자 ID:</span>
+            <span id="userId" class="detail-value user-highlight">-</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">주문 번호:</span>
+            <span id="orderId" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">상품명:</span>
+            <span id="orderName" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">결제 금액:</span>
+            <span id="amount" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">결제 수단:</span>
+            <span id="method" class="detail-value">-</span>
+        </div>
+    </div>
+    <a id="back-to-shop" class="back-button">크레딧 상점으로 돌아가기</a>
+<!--    <a href="/credit-shop.html" class="back-button">크레딧 상점으로 돌아가기</a>-->
+</div>
+
+<script>
+    let paymentData = {};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('success.html 페이지 로드됨');
+        
+        // POST 방식으로 전달된 폼 데이터 읽기
+        const forms = document.forms;
+        if (forms.length > 0) {
+            const formData = new FormData(forms[0]);
+            formData.forEach((value, key) => {
+                paymentData[key] = value;
+                console.log(`폼 데이터: ${key} = ${value}`);
+            });
+        } else {
+            // 폼이 없는 경우, URL에서 데이터 읽기 시도
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.forEach((value, key) => {
+                paymentData[key] = value;
+                console.log(`URL 파라미터: ${key} = ${value}`);
+            });
+        }
+        
+        console.log('최종 결제 데이터:', paymentData);
+        
+        // 데이터 추출
+        const { userId, orderId, orderName, amount, method, paymentKey, creditAmount } = paymentData;
+
+        // 뒤로가기 링크 설정
+        const backLink = document.getElementById('back-to-shop');
+        if (backLink && userId) {
+            backLink.href = `/${userId}/credit-shop.html`;
+        } else {
+            backLink.href = '/';
+        }
+
+        // 결제 정보 표시
+        document.getElementById('userId').textContent = userId || '-';
+        document.getElementById('orderId').textContent = orderId || '-';
+        document.getElementById('orderName').textContent = orderName || '-';
+        document.getElementById('amount').textContent = amount ? 
+            `${Number(amount).toLocaleString()}원` : '-';
+        document.getElementById('method').textContent = method || '-';
+
+        // 결제 확인 및 구매 정보 전송
+        if (paymentKey && orderId && amount) {
+            confirmPayment(paymentKey, orderId, amount);
+        }
+        
+        if (userId && amount && creditAmount) {
+            sendPurchaseInfo(userId, creditAmount, amount).then(success => {
+                if (success) {
+                    console.log('크레딧 구매 정보가 성공적으로 전송되었습니다.');
+                } else {
+                    console.warn('크레딧 구매 정보 전송에 실패했습니다.');
+                }
+            });
+        }
+    });
+
+    // 서버로 결제 승인에 필요한 결제 정보를 보내는 함수
+    async function confirmPayment(paymentKey, orderId, amount) {
+        try {
+            const requestData = {
+                paymentKey: paymentKey,
+                orderId: orderId,
+                amount: amount
+            };
+
+            const response = await fetch("/confirm", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestData),
+            });
+
+            const json = await response.json();
+
+            if (!response.ok) {
+                console.error('결제 확인 실패:', json);
+                alert(`결제 확인 중 오류가 발생했습니다: ${json.message || '알 수 없는 오류'}`);
+            }
+
+            console.log('결제 확인 응답:', json);
+        } catch (error) {
+            console.error('결제 확인 요청 중 오류:', error);
+        }
+    }
+
+    // 크레딧 구매 정보를 지정된 엔드포인트로 전송하는 함수
+    async function sendPurchaseInfo(uid, creditAmount, price) {
+        try {
+            // 현재 타임스탬프 생성
+            const timestamp = new Date().toISOString();
+
+            // 전송할 데이터 구성
+            const purchaseData = {
+                uid: uid,
+                creditAmount: parseInt(creditAmount),
+                timestamp: timestamp,
+                price: parseInt(price)
+            };
+
+            console.log('구매 정보 전송 데이터:', purchaseData);
+
+            // localhost:3000/purchase 엔드포인트로 POST 요청 전송
+            const response = await fetch("http://localhost:3000/purchase", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(purchaseData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('구매 정보 전송 실패:', errorData);
+                return false;
+            }
+
+            const responseData = await response.json();
+            console.log('구매 정보 전송 성공:', responseData);
+            return true;
+        } catch (error) {
+            console.error('구매 정보 전송 중 오류 발생:', error);
+            return false;
+        }
+    }
+</script>
+</body>
+</html>
