@@ -8,11 +8,6 @@ const admin = require('firebase-admin'); // Firebase Admin SDK 추가
 
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
-// 환경 변수 로딩 확인 (개발 중에만 사용)
-console.log('IMP_KEY 로딩 상태:', process.env.IMP_KEY ? '✓ 로딩됨' : '✗ 로딩 실패');
-console.log('IMP_SECRET 로딩 상태:', process.env.IMP_SECRET ? '✓ 로딩됨' : '✗ 로딩 실패');
-
-
 const app = express();
 const PORT = 7999;
 
