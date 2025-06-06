@@ -40,3 +40,4 @@ build/
 .env
 
 src/main/docs/firebase-config.js
+src/main/resources/*.json
