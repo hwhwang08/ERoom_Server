@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>간단 로그인 - ID 토큰 확인</title>
+  <!-- Firebase SDK를 가장 먼저 로드 -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="../firebase-config.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -259,69 +263,109 @@
     <div id="testResult"></div>
   </div>
 </div>
-<script src="../test_f.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="../firebase-config.js"></script>
 
-<!-- Firebase SDK -->
 <script>
   let currentIdToken = '';
   let currentUser = null;
+  let auth = null;
 
-
-  // 로그인 폼 처리
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const loginBtn = document.getElementById('loginBtn');
-    const loginText = document.getElementById('loginText');
-    const loginLoading = document.getElementById('loginLoading');
-
-    // 로딩 상태
-    loginText.style.display = 'none';
-    loginLoading.style.display = 'inline-block';
-    loginBtn.disabled = true;
-
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      currentUser = user;
-
-      // ID 토큰 가져오기 !!!!!!!!!!
-      const idToken = await user.getIdToken();
-      currentIdToken = idToken;
-
-      // 사용자 정보 표시
-      document.getElementById('userUid').textContent = user.uid;
-      document.getElementById('userEmail').textContent = user.email;
-      document.getElementById('emailVerified').textContent = user.emailVerified ? '✅ 인증됨' : '❌ 미인증';
-
-      // 토큰 표시
-      document.getElementById('tokenDisplay').textContent = idToken;
-      document.getElementById('tokenSection').classList.add('show');
-
-      showResult('✅ 로그인 성공! ID 토큰이 생성되었습니다.', false);
-
-    } catch (error) {
-      console.error('로그인 오류:', error);
-      showResult(`❌ 로그인 실패: ${error.message}`, true);
-    } finally {
-      // 로딩 상태 해제
-      loginText.style.display = 'inline';
-      loginLoading.style.display = 'none';
-      loginBtn.disabled = false;
+  // Firebase 초기화 확인 및 Auth 설정
+  document.addEventListener('DOMContentLoaded', function() {
+    // Firebase가 로드되었는지 확인
+    if (typeof firebase === 'undefined') {
+      showResult('❌ Firebase SDK가 로드되지 않았습니다.', true);
+      return;
     }
+
+    // Firebase Auth 초기화
+    auth = firebase.auth();
+    console.log('Firebase Auth 초기화 완료');
+
+    // 로그인 폼 처리
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
+      const loginText = document.getElementById('loginText');
+      const loginLoading = document.getElementById('loginLoading');
+
+      // 로딩 상태
+      loginText.style.display = 'none';
+      loginLoading.style.display = 'inline-block';
+      loginBtn.disabled = true;
+
+      try {
+        console.log('로그인 시도:', email);
+        
+        // Firebase Auth로 로그인
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        currentUser = user;
+
+        console.log('로그인 성공:', user.uid);
+
+        // ID 토큰 가져오기
+        const idToken = await user.getIdToken();
+        currentIdToken = idToken;
+
+        console.log('ID 토큰 생성 완료');
+
+        // 사용자 정보 표시
+        document.getElementById('userUid').textContent = user.uid;
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('emailVerified').textContent = user.emailVerified ? '✅ 인증됨' : '❌ 미인증';
+
+        // 토큰 표시
+        document.getElementById('tokenDisplay').textContent = idToken;
+        document.getElementById('tokenSection').classList.add('show');
+
+        showResult('✅ 로그인 성공! ID 토큰이 생성되었습니다.', false);
+
+      } catch (error) {
+        console.error('로그인 오류:', error);
+        let errorMessage = '';
+        
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = '등록되지 않은 이메일입니다.';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = '비밀번호가 틀렸습니다.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = '유효하지 않은 이메일 형식입니다.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.';
+            break;
+          default:
+            errorMessage = error.message || '로그인 중 오류가 발생했습니다.';
+        }
+        
+        showResult(`❌ 로그인 실패: ${errorMessage}`, true);
+      } finally {
+        // 로딩 상태 해제
+        loginText.style.display = 'inline';
+        loginLoading.style.display = 'none';
+        loginBtn.disabled = false;
+      }
+    });
   });
 
-  // 전역 함수로 등록
+  // 전역 함수들
   window.copyToken = function() {
+    if (!currentIdToken) {
+      showResult('❌ 복사할 토큰이 없습니다.', true);
+      return;
+    }
+    
     navigator.clipboard.writeText(currentIdToken).then(() => {
       showResult('📋 토큰이 클립보드에 복사되었습니다!', false);
     }).catch(err => {
       console.error('복사 실패:', err);
+      showResult('❌ 복사에 실패했습니다.', true);
     });
   };
 
@@ -331,8 +375,9 @@
       return;
     }
 
-    // !!!!!!!!!
     try {
+      console.log('토큰 검증 요청 시작');
+      
       // 토큰 검증 테스트
       const response = await fetch('http://localhost:7999/verify-token', {
         method: 'POST',
@@ -344,6 +389,7 @@
       });
 
       const data = await response.json();
+      console.log('서버 응답:', data);
 
       if (data.success) {
         showResult(`✅ 토큰 검증 성공! UID: ${data.uid}`, false);
@@ -351,19 +397,23 @@
         showResult(`❌ 토큰 검증 실패: ${data.message}`, true);
       }
     } catch (error) {
+      console.error('토큰 검증 오류:', error);
       showResult(`❌ 서버 통신 실패: ${error.message}`, true);
     }
   };
 
   window.logout = async function() {
     try {
-      await signOut(auth);
-      document.getElementById('tokenSection').classList.remove('show');
-      document.getElementById('loginForm').reset();
-      currentIdToken = '';
-      currentUser = null;
-      showResult('👋 로그아웃되었습니다.', false);
+      if (auth) {
+        await auth.signOut();
+        document.getElementById('tokenSection').classList.remove('show');
+        document.getElementById('loginForm').reset();
+        currentIdToken = '';
+        currentUser = null;
+        showResult('👋 로그아웃되었습니다.', false);
+      }
     } catch (error) {
+      console.error('로그아웃 오류:', error);
       showResult(`❌ 로그아웃 실패: ${error.message}`, true);
     }
   };
