@@ -182,9 +182,6 @@
 </div>
 <script>
     // 아임포트 객체 초기화 (중복 선언 X)
-    if (typeof window.IMP !== 'undefined') {
-        window.IMP.init("imp55547674");  // 고객사 식별코드
-    }
     IMP.init("imp55547674");  // 아임포트 고객사 식별코드
 
     let selectedOption = null;
@@ -276,8 +273,8 @@
         const amount = parseInt(selectedOption.getAttribute('data-price'));
 
         IMP.request_pay({
-            pg: 'nice_v2',
-            // pg: 'kakaopay',
+            // pg: 'nice_v2',
+            pg: 'kakaopay',
             // pg: 'tosspay',
             pay_method: 'card',
             merchant_uid: `payment-${new Date().getTime()}`,
@@ -303,6 +300,20 @@
                 error_code: rsp.error_code,
                 error_msg: rsp.error_msg
             });
+                // 실제 에러 메시지가 있는 경우만 알림
+                if (rsp.error_msg) {
+                    alert('결제 실패: ' + rsp.error_msg);
+                } else {
+                    console.log('사용자 취소로 추정 - 알림 없음');
+                }
+            } else if (!rsp.success) {
+                console.log('결제 실패/취소 처리');
+                console.log('상세 정보:', {
+                    imp_uid: rsp.imp_uid,
+                    merchant_uid: rsp.merchant_uid,
+                    error_code: rsp.error_code,
+                    error_msg: rsp.error_msg
+                });
                 // 실제 에러 메시지가 있는 경우만 알림
                 if (rsp.error_msg) {
                     alert('결제 실패: ' + rsp.error_msg);
