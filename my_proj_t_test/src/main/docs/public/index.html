@@ -248,13 +248,6 @@
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // 유효성 검사 함수
-        function validateUserId(userId) {
-            // UID는 4-20자의 영문, 숫자, 하이픈, 언더스코어만 허용
-            const uidRegex = /^[a-zA-Z0-9_-]{4,20}$/;
-            return uidRegex.test(userId);
-        }
-
         // 실시간 유효성 검사
         userIdInput.addEventListener('input', function() {
             const userId = userIdInput.value.trim();
@@ -268,20 +261,8 @@
                 invalidIcon.style.display = 'none';
                 errorMessage.style.display = 'none';
                 submitButton.disabled = true;
-                return;
-            }
-
-            if (validateUserId(userId)) {
-                validIcon.style.display = 'block';
-                invalidIcon.style.display = 'none';
-                errorMessage.style.display = 'none';
-                submitButton.disabled = false;
             } else {
-                validIcon.style.display = 'none';
-                invalidIcon.style.display = 'block';
-                errorMessage.textContent = 'ID는 4-20자의 영문, 숫자, 하이픈, 언더스코어만 허용됩니다.';
-                errorMessage.style.display = 'block';
-                submitButton.disabled = true;
+                submitButton.disabled = false;
             }
         });
 
@@ -291,7 +272,8 @@
 
             const userId = userIdInput.value.trim();
 
-            if (!validateUserId(userId)) {
+            if (userId === '') {
+                errorMessage.textContent = '사용자 UID가 없다.';
                 errorMessage.style.display = 'block';
                 return;
             }
