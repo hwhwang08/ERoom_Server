@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- 아임포트 연동-->
     <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
@@ -180,118 +181,6 @@
     <button id="purchase-button" class="purchase-button" onclick="requestpay()">구매하기</button>
 </div>
 <script>
-    // sendToServer 함수를 먼저 정의
-function sendToServer(rsp) {
-    console.log('서버로 전송할 결제 정보:', rsp);
-
-    // 결제 데이터 준비
-    const paymentData = {
-        orderId: rsp.merchant_uid,
-        amount: selectedOption.getAttribute('data-price'),
-        orderName: selectedOption.querySelector('.credit-amount').textContent,
-        method: rsp.pay_method || '카드',
-        paymentKey: rsp.imp_uid,
-        creditAmount: selectedOption.getAttribute('data-credit')
-    };
-
-    // 사용자 ID 가져오기
-    const userId = document.getElementById('user-id').textContent;
-
-    // GET 방식으로 Query Parameter 생성
-    const queryParams = new URLSearchParams(paymentData);
-    const url = `https://localhost:7999/verify-user-and-payment?${queryParams.toString()}`;
-
-    $.ajax({
-        url: url,
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${userId}`
-        },
-        success: function(response) {
-            console.log('서버 응답:', response);
-
-            if (response.success && response.userExists) {
-                // 유저 존재 확인 완료 - success 페이지로 이동
-                redirectToSuccessWithHttpData(response.paymentData, userId);
-            } else {
-                alert('사용자 검증 실패: ' + response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('서버 통신 실패:', xhr.responseText);
-
-            // 401 Unauthorized 처리
-            if (xhr.status === 401) {
-                alert('인증 실패: Authorization 헤더가 유효하지 않습니다.');
-            } else {
-                alert('서버 통신 실패: ' + error);
-            }
-        }
-    });
-}
-
-function requestpay() {
-    if (!selectedOption) {
-        alert("상품을 선택해주세요!");
-        return;
-    }
-    const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
-    const amount = parseInt(selectedOption.getAttribute('data-price'));
-
-    IMP.request_pay({
-        pg: 'nice_v2',
-        // pg: 'kakaopay',
-        // pg: 'tosspay',
-        uid: `payment-${new Date().getTime()}`,
-        pay_method: 'card',
-        merchant_uid: `payment-${new Date().getTime()}`,
-        name: productName,
-        amount: amount,
-        buyer_email: 'test@example.com',
-        buyer_name: '홍길동',
-    }, function (rsp) {
-    console.log('아임포트 응답:', rsp);
-    
-    // 결제 성공 여부를 엄격하게 체크
-    if (rsp.success === true && rsp.paid_amount > 0) {
-        // 결제 성공 처리
-        console.log('결제 성공!');
-        sessionStorage.setItem('orderId', rsp.merchant_uid);
-        sessionStorage.setItem('amount', amount.toString());
-        sessionStorage.setItem('orderName', productName);
-        sessionStorage.setItem('method', rsp.pay_method);
-        sessionStorage.setItem('paymentKey', rsp.imp_uid);
-        sessionStorage.setItem('creditAmount', selectedOption.getAttribute('data-credit'));
-        sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
-        sendToServer(rsp);
-    } else {
-        // 결제 실패 또는 취소 처리
-        console.log('결제 실패/취소 상세:', {
-            success: rsp.success,
-            error_code: rsp.error_code,
-            error_msg: rsp.error_msg,
-            status: rsp.status
-        });
-        
-        // 사용자 취소인 경우 구분
-        const cancelCodes = ['CANCEL', 'CANCELLED', 'USER_CANCEL'];
-        const isCancelled = cancelCodes.includes(rsp.error_code) || 
-                          (rsp.error_msg && (
-                              rsp.error_msg.includes('취소') || 
-                              rsp.error_msg.includes('cancel') ||
-                              rsp.error_msg.includes('CANCEL')
-                          ));
-        
-        if (isCancelled) {
-            console.log('사용자가 결제를 취소했습니다.');
-            // 취소 시에는 별도 처리 없이 현재 페이지에 머물기
-        } else {
-            // 실제 오류인 경우만 알림 표시
-            alert('결제 실패: ' + (rsp.error_msg || '알 수 없는 오류'));
-        }
-    }
-});
-}
     // 이미 선언했는지 확인하고 다시 선언하지 않도록 수정
     if (typeof IMP === 'undefined') {
         const IMP = window.IMP;
@@ -299,6 +188,141 @@ function requestpay() {
     IMP.init("imp55547674");  // 아임포트 고객사 식별코드
 
     let selectedOption = null;
+
+    // sendToServer 함수를 전역으로 먼저 정의
+    function sendToServer(rsp) {
+        console.log('서버로 전송할 결제 정보:', rsp);
+
+        // 결제 데이터 준비
+        const paymentData = {
+            orderId: rsp.merchant_uid,
+            amount: selectedOption.getAttribute('data-price'),
+            orderName: selectedOption.querySelector('.credit-amount').textContent,
+            method: rsp.pay_method || '카드',
+            paymentKey: rsp.imp_uid,
+            creditAmount: selectedOption.getAttribute('data-credit')
+        };
+
+        // 사용자 ID 가져오기
+        const userId = document.getElementById('user-id').textContent;
+
+        // GET 방식으로 Query Parameter 생성
+        const queryParams = new URLSearchParams(paymentData);
+        const url = `https://localhost:7999/verify-user-and-payment?${queryParams.toString()}`;
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${userId}`
+            },
+            success: function(response) {
+                console.log('서버 응답:', response);
+
+                if (response.success && response.userExists) {
+                    // 유저 존재 확인 완료 - success 페이지로 이동
+                    redirectToSuccessWithHttpData(response.paymentData, userId);
+                } else {
+                    alert('사용자 검증 실패: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('서버 통신 실패:', xhr.responseText);
+
+                // 401 Unauthorized 처리
+                if (xhr.status === 401) {
+                    alert('인증 실패: Authorization 헤더가 유효하지 않습니다.');
+                } else {
+                    alert('서버 통신 실패: ' + error);
+                }
+            }
+        });
+    }
+
+    // HTTP 방식으로 success 페이지에 데이터 전달하는 함수도 전역으로 정의
+    function redirectToSuccessWithHttpData(paymentData, userId) {
+        // form을 동적으로 생성하여 POST 방식으로 데이터 전송
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/${userId}/success.html`;
+        form.style.display = 'none';
+
+        // userId도 포함해서 전달
+        const input_userId = document.createElement('input');
+        input_userId.type = 'hidden';
+        input_userId.name = 'userId';
+        input_userId.value = userId;
+        form.appendChild(input_userId);
+
+        // 각 데이터를 hidden input으로 추가
+        Object.keys(paymentData).forEach(key => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = paymentData[key];
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function requestpay() {
+        if (!selectedOption) {
+            alert("상품을 선택해주세요!");
+            return;
+        }
+        const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
+        const amount = parseInt(selectedOption.getAttribute('data-price'));
+
+        IMP.request_pay({
+            pg: 'nice_v2',
+            // pg: 'kakaopay',
+            // pg: 'tosspay',
+            uid: `payment-${new Date().getTime()}`,
+            pay_method: 'card',
+            merchant_uid: `payment-${new Date().getTime()}`,
+            name: productName,
+            amount: amount,
+            buyer_email: 'test@example.com',
+            buyer_name: '홍길동',
+        }, function (rsp) {
+            console.log('=== 아임포트 응답 전체 ===');
+            console.log(rsp);
+            console.log('imp_uid:', rsp.imp_uid);
+            console.log('merchant_uid:', rsp.merchant_uid);
+            console.log('success:', rsp.success);
+            console.log('========================');
+
+            // 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
+            if (rsp.imp_uid && rsp.merchant_uid) {
+                console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
+                sessionStorage.setItem('orderId', rsp.merchant_uid);
+                sessionStorage.setItem('amount', amount.toString());
+                sessionStorage.setItem('orderName', productName);
+                sessionStorage.setItem('method', rsp.pay_method || '카드');
+                sessionStorage.setItem('paymentKey', rsp.imp_uid);
+                sessionStorage.setItem('creditAmount', selectedOption.getAttribute('data-credit'));
+                sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
+                sendToServer(rsp);
+            } else {
+                console.log('결제 실패/취소 처리 - imp_uid 또는 merchant_uid 없음');
+                console.log('상세 정보:', {
+                    imp_uid: rsp.imp_uid,
+                    merchant_uid: rsp.merchant_uid,
+                    error_code: rsp.error_code,
+                    error_msg: rsp.error_msg
+                });
+
+                // 실제 에러 메시지가 있는 경우만 알림
+                if (rsp.error_msg) {
+                    alert('결제 실패: ' + rsp.error_msg);
+                } else {
+                    console.log('사용자 취소로 추정 - 알림 없음');
+                }
+            }
+        });
+    }
 
     // 크레딧 옵션 클릭 처리
     document.querySelectorAll('.credit-option').forEach(option => {

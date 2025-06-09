@@ -281,5 +281,4 @@ https.createServer(httpsOptions, app).listen(PORT_HTTPS, () => {
     console.log(`HTTPS 서버 실행 중: https://localhost:${PORT_HTTPS}`);
     console.log(`사용자별 크레딧 상점 예시: https://localhost:${PORT_HTTPS}/user_alice_123`);
     console.log(`토큰 테스트용 임시 로그인: https://localhost:${PORT_HTTPS}/test_login.html`);
-
 });
