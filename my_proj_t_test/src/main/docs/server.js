@@ -113,9 +113,7 @@ app.post('/verify-token', async (req, res) => {
 
 // !!!!!!!!!!
 function validateUserId(userId) {
-    // 예: userId는 영문, 숫자, 언더스코어(_)만 허용하고 길이는 3~30자
-    const regex = /^[a-zA-Z0-9_]{3,30}$/;
-    return regex.test(userId);
+    return true;
 }
 
 
@@ -172,23 +170,23 @@ async function verifyPayment(imp_uid) {
         return false;
     }
 
+    // 토스 결제시 필요. 토스는 두단계 승인이기에
+    const res = await axios.post(
+        'https://api.tosspayments.com/v1/payments/confirm',
+        {
+            paymentKey,
+            orderId,
+            amount: Number(amount),
+        },
+        {
+            headers: {
+                'Authorization': `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    );
 
-    // const res = await axios.post(
-    //     'https://api.tosspayments.com/v1/payments/confirm',
-    //     {
-    //         paymentKey,
-    //         orderId,
-    //         amount: Number(amount),
-    //     },
-    //     {
-    //         headers: {
-    //             'Authorization': `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`,
-    //             'Content-Type': 'application/json',
-    //         },
-    //     }
-    // );
-    //
-    // return res.data;
+    return res.data;
 }
 
 // 정적 파일 서빙
@@ -207,16 +205,9 @@ app.get('/', (req, res) => {
 // 사용자별 크레딧 상점 페이지
 app.get('/:userId/credit-shop.html', async (req, res) => {
     const userId = req.params.userId;
-    if (!validateUserId(userId)) {
-        return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-    }
-    if (!(await checkUserExists(userId))) {
-        return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-    }
+    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
     const filePath = path.join(__dirname, 'public', 'credit-shop.html');
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).send('credit-shop.html 파일을 찾을 수 없습니다.');
-    }
+    if (!fs.existsSync(filePath)) return res.status(404).send('credit-shop.html 파일을 찾을 수 없습니다.');
     fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
         const modifiedHtml = data.replace(
@@ -317,12 +308,8 @@ app.post('/iamport-webhook', (req, res) => {
 // 사용자 ID 루트 접근
 app.get('/:userId', async (req, res) => {
     const userId = req.params.userId;
-    if (!validateUserId(userId)) {
-        return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-    }
-    if (!(await checkUserExists(userId))) {
-        return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-    }
+    if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
+    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
     res.redirect(`/${userId}/credit-shop.html`);
 });
 // HTTPS 서버 실행
