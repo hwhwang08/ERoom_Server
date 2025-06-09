@@ -14,7 +14,6 @@ const PORT_HTTPS = 7999; // HTTPS 포트
 const httpsOptions = {
     key: fs.readFileSync(path.resolve(__dirname, '../../../localhost+2-key.pem')),
     cert: fs.readFileSync(path.resolve(__dirname, '../../../localhost+2.pem')),
-
 };
 
 // Firebase Admin 초기화 (경로는 .env에 넣고 불러오는 걸 추천)
@@ -39,12 +38,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// 사용자 ID 유효성 검사 함수
-function validateUserId(userId) {
-    const uidRegex = /^[a-zA-Z0-9_-]{4,20}$/;
-    return uidRegex.test(userId);
-}
-
 // Firebase에서 유저 존재 여부 확인 함수
 async function checkUserExists(userId) {
     try {
@@ -59,7 +52,6 @@ async function checkUserExists(userId) {
 }
 
 // API 엔드포인트들
-
 // GET - 사용자 검증 및 결제 정보 확인
 app.get('/verify-user-and-payment', async (req, res) => {
     try {
@@ -119,27 +111,84 @@ app.post('/verify-token', async (req, res) => {
     }
 });
 
-const axios = require('axios');
+// !!!!!!!!!!
+function validateUserId(userId) {
+    // 예: userId는 영문, 숫자, 언더스코어(_)만 허용하고 길이는 3~30자
+    const regex = /^[a-zA-Z0-9_]{3,30}$/;
+    return regex.test(userId);
+}
 
-async function approvePayment(paymentKey, orderId, amount) {
-    const secretKey = process.env.TOSS_SECRET_KEY;
 
-    const res = await axios.post(
-        'https://api.tosspayments.com/v1/payments/confirm',
-        {
-            paymentKey,
-            orderId,
-            amount: Number(amount),
-        },
-        {
-            headers: {
-                'Authorization': `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`,
-                'Content-Type': 'application/json',
-            },
+const IMP_API_KEY = process.env.IMP_KEY;
+const IMP_API_SECRET = process.env.IMP_SECRET;
+
+async function getToken() {
+    const response = await axios.post('https://api.iamport.kr/users/getToken', {
+        imp_key: IMP_API_KEY,
+        imp_secret: IMP_API_SECRET,
+    });
+    if (response.data.code === 0) {
+        return response.data.response.access_token;
+    }
+    throw new Error('아임포트 토큰 발급 실패');
+}
+
+app.get('/payment-complete', async (req, res) => {
+    const { imp_uid, merchant_uid } = req.query;
+
+    if (!imp_uid || !merchant_uid) {
+        return res.status(400).send('잘못된 요청입니다. (imp_uid 또는 merchant_uid 없음)');
+    }
+
+    try {
+        const verified = await verifyPayment(imp_uid); // 아까 만든 결제 검증 함수 사용
+        if (verified) {
+            // 성공 페이지 보여주기
+            res.redirect(`/success.html?imp_uid=${imp_uid}&merchant_uid=${merchant_uid}`);
+        } else {
+            // 실패 페이지 보여주기
+            res.redirect(`/fail.html?imp_uid=${imp_uid}&merchant_uid=${merchant_uid}`);
         }
-    );
+    } catch (err) {
+        console.error('결제 검증 중 오류 발생:', err);
+        res.status(500).send('서버 오류가 발생했습니다.');
+    }
+});
 
-    return res.data;
+const axios = require('axios');
+async function verifyPayment(imp_uid) {
+    const token = await getToken(); // 아임포트 인증 토큰 발급 함수
+    const { data } = await axios.get(`https://api.iamport.kr/payments/${imp_uid}`, {
+        headers: { Authorization: token }
+    });
+
+    if (data.code === 0 && data.response.status === 'paid') {
+        console.log("!!!!!결제 성공!")
+        // 결제 성공
+        return true;
+    } else {
+        // 결제 실패 또는 취소
+        console.log("!!!!!결제 실패!")
+        return false;
+    }
+
+
+    // const res = await axios.post(
+    //     'https://api.tosspayments.com/v1/payments/confirm',
+    //     {
+    //         paymentKey,
+    //         orderId,
+    //         amount: Number(amount),
+    //     },
+    //     {
+    //         headers: {
+    //             'Authorization': `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`,
+    //             'Content-Type': 'application/json',
+    //         },
+    //     }
+    // );
+    //
+    // return res.data;
 }
 
 // 정적 파일 서빙
