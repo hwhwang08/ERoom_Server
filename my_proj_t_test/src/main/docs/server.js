@@ -119,6 +119,29 @@ app.post('/verify-token', async (req, res) => {
     }
 });
 
+const axios = require('axios');
+
+async function approvePayment(paymentKey, orderId, amount) {
+    const secretKey = process.env.TOSS_SECRET_KEY;
+
+    const res = await axios.post(
+        'https://api.tosspayments.com/v1/payments/confirm',
+        {
+            paymentKey,
+            orderId,
+            amount: Number(amount),
+        },
+        {
+            headers: {
+                'Authorization': `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    );
+
+    return res.data;
+}
+
 // 정적 파일 서빙
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -245,19 +268,6 @@ app.get('/:userId', async (req, res) => {
     }
     res.redirect(`/${userId}/credit-shop.html`);
 });
-
-// HTTP 서버: HTTPS 리다이렉트
-// const http = require('http');
-// http.createServer((req, res) => {
-//     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
-//     res.end();
-// }).listen(PORT_HTTP, () => {
-//     console.log(`HTTP 서버 실행 중 (HTTPS로 리다이렉트): http://localhost:${PORT_HTTP}`);
-//     console.log(`메인 페이지: http://localhost:${PORT_HTTP}`);
-//     console.log(`사용자별 크레딧 상점 예시: http://localhost:${PORT_HTTP}/user_alice_123`);
-//     console.log(`토큰 테스트용 임시 로그인: http://localhost:${PORT_HTTP}/test_login.html`);
-// });
-
 // HTTPS 서버 실행
 https.createServer(httpsOptions, app).listen(PORT_HTTPS, () => {
     console.log(`HTTPS 서버 실행 중: https://localhost:${PORT_HTTPS}`);
