@@ -257,6 +257,14 @@ app.get('/:userId/success.html', async (req, res) => {
     });
 });
 
+// 아임포트 웹훅 처리용 엔드포인트
+app.post('/iamport-webhook', (req, res) => {
+    console.log('아임포트 웹훅 호출됨!', req.body);
+
+    // 여기에 결제 정보 검증/처리 로직 작성
+    res.status(200).send('웹훅 OK'); // 아임포트가 성공했다고 인식하려면 반드시 200을 반환해야 함
+});
+
 // 사용자 ID 루트 접근
 app.get('/:userId', async (req, res) => {
     const userId = req.params.userId;
