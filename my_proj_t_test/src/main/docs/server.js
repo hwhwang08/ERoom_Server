@@ -173,7 +173,7 @@ async function verifyPayment(imp_uid) {
     return res.data;
 }
 
-// 정적 파일 (public)서빙?
+// /public/credit-shop.html로 해야하는걸 그냥 /credit-shop.html로 해도 바로 연결되게 해주는것
 app.use(express.static(path.join(__dirname, 'public')));
 
 // firebase-config.js 연결. 보안땜에 따로 뺌
@@ -243,7 +243,7 @@ app.get('/:userId/credit-shop.html', async (req, res) => {
     });
 });
 
-// 결제 성공창 처리
+// 결제 성공창 처리. 검증 끝난 결제 정보를 success페이지로 넘김
 app.post('/:userId/success.html', async (req, res) => {
     const userId = req.params.userId;
     if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
@@ -282,7 +282,7 @@ app.post('/:userId/success.html', async (req, res) => {
     });
 });
 
-// 결제 성공창 겟처리
+// 결제 성공창 처리. 결제 성공여부랑 유저 존재 여부를 받음.
 app.get('/:userId/success.html', async (req, res) => {
     const userId = req.params.userId;
     if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));

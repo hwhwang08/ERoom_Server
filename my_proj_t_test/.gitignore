@@ -45,3 +45,4 @@ src/main/resources/*.json
 .crt
 .csr
 .key
+server.key
