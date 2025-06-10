@@ -41,5 +41,7 @@ build/
 
 src/main/docs/firebase-config.js
 src/main/resources/*.json
-key.pem
-localhost+2-key.pem
+*key.pem
+.crt
+.csr
+.key
