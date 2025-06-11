@@ -4,11 +4,23 @@ const path = require('path');
 const admin = require('firebase-admin');
 const https = require('https');
 const fs = require('fs');
+const session = require('express-session');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
 // const PORT_HTTP = 7999;  // HTTP 포트 (리다이렉트용)
 const PORT_HTTPS = 7999; // HTTPS 포트
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'hyper-secret-key', // .env에 추가하세요
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: true, // HTTPS에서만 작동
+        httpOnly: true,
+        maxAge: 1000 * 60 * 30, // 30분
+    }
+}));
 
 // HTTPS 인증서 처리
 const httpsOptions = {
@@ -29,7 +41,10 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // 미들웨어? 중간다리역할이랬던가.
-app.use(cors());
+app.use(cors({
+    origin: 'https://localhost:7999',
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -40,16 +55,23 @@ app.use((req, res, next) => {
 });
 
 // Firebase에서 유저 존재 여부 확인 함수
-async function checkUserExists(userId) {
+async function checkUserExists(uid) {
     try {
         // 파이어베이스 loginhistory콜렉션 기반으로 userId일치를 확인하는 코드.
         const querySnapshot = await db.collection('loginHistory')
-            .where("userId", "==", userId)
+            .where("userId", "==", uid)
             .get();
-        return !querySnapshot.empty;
+        const userdata = await db.collection('user_Datas')
+            .where("uid", "==", uid)
+            .get();
+
+        return {
+            userExists: !querySnapshot.empty,
+            userdata: userdata.docs.map(doc => doc.data()) // 배열로 파싱
+        };
     } catch (error) {
         console.error('파베 유저 확인 오류:', error);
-        return false;
+        return { userExists: false, userdata: [] };
     }
 }
 
@@ -146,10 +168,10 @@ async function verifyPayment(imp_uid) {
     });
 
     if (data.code === 0 && data.response.status === 'paid') {
-        console.log("!!!!!결제 성공!")
+        console.log("!!결제 성공!")
         return true;
     } else {
-        console.log("!!!!!결제 실패!")
+        console.log("!!결제 실패!")
         return false;
     }
 
@@ -181,12 +203,13 @@ app.get('/firebase-config.js', (req, res) => {
 
 // 기본 루트
 app.get('/', (req, res) => {
+    console.log("왜쨰서 index?")
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// !!! Firebase ID 토큰 검증 - 기존 '/' → '/verify-token' 으로 변경
+// Firebase ID 토큰 검증 - 기존 '/' → '/verify-token' 으로 변경 !!! 혜주님과 연동하는 코드
 app.get('/verify-token', async (req, res) => {
-    console.log("유니티 토큰 연결!!!!!!!!")
+    console.log("유니티 토큰 연결!!")
 
     // req.headers는 요청에 포함된 http 헤더 담은 객체.
     // 파이어베이스 id토큰이 Authorization: Bearer <토큰>형태로 담긴다. 이건 토큰 가져오는 코드. 없을시 if문 실행
@@ -205,17 +228,34 @@ app.get('/verify-token', async (req, res) => {
         const uid = decodedToken.uid;
         console.log("토큰 검증 완: ", uid)
 
-        // loginHistory콜렉션조회해서 해당 uid기록 있는지 확인하는거라는데 loginhis가 아니라 userdater로 확인해야할텐데? 나중에 상의해야하나
-        const userExists = await checkUserExists(uid);
-        console.log("유저 존재 여부: ", userExists)
-        
+        // !!! loginHistory콜렉션조회해서 해당 uid기록 있는지 확인. userData는 내가 만든 임시 콜렉션
+        const result = await checkUserExists(uid);
+        console.log(result.userExists);  // true or false
+        console.log(result.userdata);    // 배열 형태로 사용자 데이터
 
-        // 토큰 검증 완료시 return res.redirect(`/${uid}/credit-shop.html`);로 바꿔서 크레딧 샵으로 이동하게 하자. 일단 연결 확인 하고..
+        // const nickname = result.userdata;
+        // [0]?.nickname || "unknown"은 한글 닉 안깨지게 하는용
+        const nickname = result.userdata[0]?.nickname || "unknown";
+
+        req.session.userId = uid;
+        req.session.nickname = nickname;
+        req.session.authenticated = true;
+        console.log("토큰 세션 " ,req.session);
+
+        res.cookie('connect.sid', req.sessionID, {
+            httpOnly: true,
+            secure: false,
+            maxAge: 1000 * 60 * 30,
+        });
+
+        // 유니티로 보내는 제이슨
         return res.json({
             success: true,
             uid,
-            userExists,
+            nickname,
             message: '토큰 검증 성공했습니다!!',
+            sessionId: req.sessionID,  // 혹은 실제 쿠키값
+            redirectUrl: '/credit-shop' // user_id 없는 URL 반환
         });
     } catch (error) {
         console.error('토큰 검증 실패:', error);
@@ -224,25 +264,44 @@ app.get('/verify-token', async (req, res) => {
 });
 
 // 사용자별 크레딧 상점 페이지
-app.get('/:userId/credit-shop.html', async (req, res) => {
-    const userId = req.params.userId;
-    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-    const filePath = path.join(__dirname, 'public', 'credit-shop.html');
-    if (!fs.existsSync(filePath)) return res.status(404).send('credit-shop.html 파일을 찾을 수 없습니다.');
-    fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
-        const modifiedHtml = data.replace(
-            '</body>',
-            `<script>
-         window.addEventListener('DOMContentLoaded', () => {
-           sessionStorage.setItem('userId', '${userId}');
-           const userIdElement = document.getElementById('user-id');
-           if (userIdElement) userIdElement.textContent = '${userId}';
-         });
-       </script></body>`
-        );
-        res.send(modifiedHtml);
-    });
+app.get('/credit-shop.html', async (req, res) => {
+    console.log("크레딧 샵 확인")
+    console.log("크레딧샵", req.session);
+
+    // userId가 /:userId로 들어오는 그것. decodeURIComponent는 한글닉 처리
+    // const userid = decodeURIComponent(req.params.user_id);
+
+    // 세션 확인. 세션 없을시 index로 이동
+    if (!req.session.authenticated || !req.session.userId) return res.redirect('/?error=unauthorized');
+
+    try {
+        // credit-shop.html 로딩
+        const filePath = path.join(__dirname, 'public', 'credit-shop.html');
+        if (!fs.existsSync(filePath)) return res.status(404).send('credit-shop.html 파일을 찾을 수 없습니다.');
+
+        fs.readFile(filePath, 'utf8', (err, data) => {
+            if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
+
+            const modifiedHtml = data.replace(
+                '</body>',
+                `<script>
+                window.addEventListener('DOMContentLoaded', () => {
+                    // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
+                    // const decodedUserId = decodeURIComponent('${userid}');
+                    // sessionStorage.setItem('userId', decodedUserId);
+                    sessionStorage.setItem('userId', '${req.session.nickname}');
+                    const userIdElement = document.getElementById('user-id');
+                    if (userIdElement) userIdElement.textContent = '${req.session.nickname}';
+                    // if (userIdElement) userIdElement.textContent = decodedUserId;
+                });
+                </script></body>`
+            );
+            res.send(modifiedHtml);
+        });
+    } catch (error) {
+        console.error("에러 발생:", error);
+        res.status(500).send('서버 에러');
+    }
 });
 
 // 결제 성공창 처리. 검증 끝난 결제 정보를 success페이지로 넘김
