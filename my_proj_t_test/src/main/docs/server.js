@@ -97,9 +97,7 @@ app.post('/purchase', (req, res) => {
 });
 
 // 인덱스에서 유저 id확인 그거.
-function validateUserId(userId) {
-    return true;
-}
+function validateUserId(userId) {return true;}
 
 // 보안문제로 개인키 env에 넣음
 const IMP_API_KEY = process.env.IMP_KEY;
@@ -188,12 +186,14 @@ app.get('/', (req, res) => {
 
 // !!! Firebase ID 토큰 검증 - 기존 '/' → '/verify-token' 으로 변경
 app.get('/verify-token', async (req, res) => {
+    console.log("유니티 토큰 연결!!!!!!!!")
+
     // req.headers는 요청에 포함된 http 헤더 담은 객체.
     // 파이어베이스 id토큰이 Authorization: Bearer <토큰>형태로 담긴다. 이건 토큰 가져오는 코드. 없을시 if문 실행
     const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ success: false, message: 'Authorization 헤더가 없습니다.' });
-    }
+    console.log("받은 Authorization 헤더 확인:", authHeader);
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: 'Authorization 헤더가 없습니다.' });
 
     const idToken = authHeader.split('Bearer ')[1].trim();
 
@@ -203,23 +203,25 @@ app.get('/verify-token', async (req, res) => {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         // 유효할시 고유 uid 반환
         const uid = decodedToken.uid;
+        console.log("토큰 검증 완: ", uid)
 
         // loginHistory콜렉션조회해서 해당 uid기록 있는지 확인하는거라는데 loginhis가 아니라 userdater로 확인해야할텐데? 나중에 상의해야하나
         const userExists = await checkUserExists(uid);
+        console.log("유저 존재 여부: ", userExists)
+        
 
         // 토큰 검증 완료시 return res.redirect(`/${uid}/credit-shop.html`);로 바꿔서 크레딧 샵으로 이동하게 하자. 일단 연결 확인 하고..
         return res.json({
             success: true,
             uid,
             userExists,
-            message: '토큰 검증 성공',
+            message: '토큰 검증 성공했습니다!!',
         });
     } catch (error) {
         console.error('토큰 검증 실패:', error);
         return res.status(401).json({ success: false, message: '유효하지 않은 토큰임.' });
     }
 });
-
 
 // 사용자별 크레딧 상점 페이지
 app.get('/:userId/credit-shop.html', async (req, res) => {
@@ -317,12 +319,6 @@ app.get('/:userId', async (req, res) => {
     if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
     if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
     res.redirect(`/${userId}/credit-shop.html`);
-});
-
-// !!! 혜주님 토큰 요청 확인
-app.use((req, res, next) => {
-    console.log(`!!! 유니티 연결 여부 확인: [${new Date()}] ${req.method} ${req.url}`);
-    next();
 });
 
 // HTTPS 서버 실행
