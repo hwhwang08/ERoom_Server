@@ -365,8 +365,7 @@
 
             // URL에서 사용자 ID 추출 (/:userId/credit-shop.html 형식)
             const pathSegments = window.location.pathname.split('/');
-            // decodeURIComponent한글 깨짐 처리
-            const pathUserId = decodeURIComponent(pathSegments[1]);
+            const pathUserId = pathSegments[1]; // user_alice_123
 
             // 우선순위: URL 경로 > URL 파라미터 > sessionStorage
             const userId = pathUserId || paramUserId || savedUserId;
