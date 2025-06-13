@@ -226,7 +226,7 @@ app.get('/verify-token', async (req, res) => {
             uid,
             nickname,
             message: '토큰 검증 성공했습니다!!',
-            redirectUrl: 'https://192.168.0.170:7999/credit-shop.html'
+            redirectUrl: `https://192.168.0.170:7999/credit-shop.html?uid=${encodeURIComponent(uid)}`
         });
     } catch (error) {
         console.error('토큰 검증 실패:', error);
@@ -236,13 +236,19 @@ app.get('/verify-token', async (req, res) => {
 
 // 사용자별 크레딧 상점 페이지
 app.get('/credit-shop.html', async (req, res) => {
+    console.log("크레딧샵ㅇㅇㅇㅇㅇㅇㅇㅇ")
+    const uid = req.query.uid;
+    console.log("크레딧샵 요청, uid:", uid);
+
     try {
         // 닉네임으로 사용자 조회
-        // const userdata = await db.collection('user_Datas')
-        //     .where("nickname", "==", userid)
-        //     .get();
+        const userdata = await db.collection('user_Datas')
+            .where("uid", "==", uid)
+            .get();
         // 파베에 일치하는 유저 닉 없을시 인덱스로
         // if (userdata.empty) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userid));
+
+        const nickname = userdata.docs[0].data().nickname || "몰?루";
 
         // credit-shop.html 로딩
         const filePath = path.join(__dirname, 'public', 'credit-shop.html');
@@ -255,10 +261,9 @@ app.get('/credit-shop.html', async (req, res) => {
                 '</body>',
                 `<script>
                 window.addEventListener('DOMContentLoaded', () => {
-                    const hi = 'ㅎㅇㅎㅇ';
-                    // html의 id="user-id" 태그에 ㅎㅇㅎㅇ넣기
                     const userIdElement = document.getElementById('user-id');
-                    if (userIdElement) userIdElement.textContent = hi;
+                    // html의 id="user-id" 태그에 사용자명 넣기
+                    if (userIdElement) userIdElement.textContent = ${JSON.stringify(nickname)};
                 });
                 </script></body>`
             );
@@ -272,14 +277,14 @@ app.get('/credit-shop.html', async (req, res) => {
 });
 
 // 결제 성공창 처리. 검증 끝난 결제 정보를 success페이지로 넘김
-app.post('/:userId/success.html', async (req, res) => {
-    const userId = req.params.userId;
-    if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
+app.post('/success.html', async (req, res) => {
+    // const userId = req.params.userId;
+    // if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
+    // if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
     const filePath = path.join(__dirname, 'public', 'success.html');
     fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
-        const paymentData = { ...req.body, userId };
+        const paymentData = { ...req.body, userd };
         const modifiedHtml = data.replace(
             '</body>',
             `<script>
@@ -311,7 +316,7 @@ app.post('/:userId/success.html', async (req, res) => {
 });
 
 // 결제 성공창 처리. 결제 성공여부랑 유저 존재 여부를 받음.
-app.get('/:userId/success.html', async (req, res) => {
+app.get('/success.html', async (req, res) => {
     const userId = req.params.userId;
     if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
     if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
@@ -338,14 +343,6 @@ app.post('/iamport-webhook', (req, res) => {
     // 여기에 결제 정보 검증/처리 로직 작성
     res.status(200).send('웹훅 OK'); // 아임포트가 성공했다고 인식하려면 반드시 200을 반환해야 함
 });
-
-// 사용자 ID 루트 접근
-// app.get('/:userId', async (req, res) => {
-//     const userId = req.params.userId;
-//     if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-//     if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-//     res.redirect(`/${userId}/credit-shop.html`);
-// });
 
 // HTTPS 서버 실행
 // https.createServer(httpsOptions, app).listen(PORT_HTTPS, () => {
