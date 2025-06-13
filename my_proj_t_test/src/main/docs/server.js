@@ -179,7 +179,7 @@ async function verifyPayment(imp_uid) {
 }
 
 // /public/credit-shop.html로 해야하는걸 그냥 /credit-shop.html로 해도 바로 연결되게 해주는것
-// app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // firebase-config.js 연결. 보안땜에 따로 뺌
 app.get('/firebase-config.js', (req, res) => {
@@ -214,19 +214,19 @@ app.get('/verify-token', async (req, res) => {
 
         // !!! loginHistory콜렉션조회해서 해당 uid기록 있는지 확인. 추후 userData는 내가 만든 임시 콜렉션
         const result = await checkUserExists(uid);
+        console.log(result.userExists);  // true or false
         console.log(result.userdata);    // 배열 형태로 사용자 데이터
 
         // const nickname = result.userdata;
         // [0]?.nickname || "unknown"은 한글 닉 안깨지게 하는용
         const nickname = result.userdata[0]?.nickname || "unknown";
-        // return res.redirect('/creditshop');
+
         // 유니티로 보내는 제이슨
         return res.json({
             success: true,
             uid,
             nickname,
             message: '토큰 검증 성공했습니다!!',
-            redirectUrl: 'https://192.168.0.170:7999/credit-shop.html'
         });
     } catch (error) {
         console.error('토큰 검증 실패:', error);
@@ -235,34 +235,37 @@ app.get('/verify-token', async (req, res) => {
 });
 
 // 사용자별 크레딧 상점 페이지
-app.get('/credit-shop.html', async (req, res) => {
+app.get('/:user_id/credit-shop.html', async (req, res) => {
+    // userId가 /:userId로 들어오는 그것. decodeURIComponent는 한글닉 처리
+    const userid = decodeURIComponent(req.params.user_id);
+
     try {
         // 닉네임으로 사용자 조회
-        // const userdata = await db.collection('user_Datas')
-        //     .where("nickname", "==", userid)
-        //     .get();
+        const userdata = await db.collection('user_Datas')
+            .where("nickname", "==", userid)
+            .get();
         // 파베에 일치하는 유저 닉 없을시 인덱스로
-        // if (userdata.empty) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userid));
+        if (userdata.empty) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userid));
 
         // credit-shop.html 로딩
         const filePath = path.join(__dirname, 'public', 'credit-shop.html');
         if (!fs.existsSync(filePath)) return res.status(404).send('credit-shop.html 파일을 찾을 수 없습니다.');
-
-        // html 파일읽기. 진짜 html코드 그거. data가 html파일. 이걸 쓰는건 html 내용 수정할때.
         fs.readFile(filePath, 'utf8', (err, data) => {
             if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
+
             const modifiedHtml = data.replace(
                 '</body>',
                 `<script>
                 window.addEventListener('DOMContentLoaded', () => {
-                    const hi = 'ㅎㅇㅎㅇ';
-                    // html의 id="user-id" 태그에 ㅎㅇㅎㅇ넣기
+                    // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
+                    const decodedUserId = decodeURIComponent('${userid}');
+                    sessionStorage.setItem('userId', decodedUserId);
                     const userIdElement = document.getElementById('user-id');
-                    if (userIdElement) userIdElement.textContent = hi;
+                    if (userIdElement) userIdElement.textContent = decodedUserId;
                 });
                 </script></body>`
             );
-            // 위의 수정된 html파일 보내기
+
             res.send(modifiedHtml);
         });
     } catch (error) {
@@ -340,18 +343,18 @@ app.post('/iamport-webhook', (req, res) => {
 });
 
 // 사용자 ID 루트 접근
-// app.get('/:userId', async (req, res) => {
-//     const userId = req.params.userId;
-//     if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-//     if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-//     res.redirect(`/${userId}/credit-shop.html`);
-// });
+app.get('/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
+    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
+    res.redirect(`/${userId}/credit-shop.html`);
+});
 
 // HTTPS 서버 실행
 // https.createServer(httpsOptions, app).listen(PORT_HTTPS, () => {
 // '0.0.0.0'은 모든 네트워크 인터페이스에서(ip)접근 허용한단뜻. 위의 방식대로는 유니티랑 연동이 안된다는데..
 https.createServer(httpsOptions, app).listen(PORT_HTTPS, '0.0.0.0', () => {
     console.log(`HTTPS 서버 실행 중: https://localhost:${PORT_HTTPS}`);
-    console.log(`사용자별 크레딧 상점 예시: https://localhost:${PORT_HTTPS}/credit-shop.html`);
+    console.log(`사용자별 크레딧 상점 예시: https://localhost:${PORT_HTTPS}/user_alice_123`);
     console.log(`토큰 테스트용 임시 로그인: https://localhost:${PORT_HTTPS}/test_login.html`);
 });
