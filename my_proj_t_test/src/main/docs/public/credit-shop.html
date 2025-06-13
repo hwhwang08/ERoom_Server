@@ -203,7 +203,6 @@
 
         // 사용자 ID 가져오기
         const userId = document.getElementById('user-id').textContent;
-        console.log("뭐가 들어간겨",userId);
 
         // GET 방식으로 Query Parameter 생성
         const queryParams = new URLSearchParams(paymentData);
@@ -213,7 +212,7 @@
             url: url,
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${userId}`
+                // 'Authorization': `Bearer ${userId}`
             },
             success: function(response) {
                 console.log('서버 응답:', response);
@@ -271,8 +270,6 @@
             alert("상품을 선택해주세요!");
             return;
         }
-        const userId = firebase.auth().currentUser.uid; // Firebase UID
-        const buyerName = firebase.auth().currentUser.displayName || '홍길동'; // 사용자 이름 또는 닉네임
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
         const amount = parseInt(selectedOption.getAttribute('data-price'));
 
@@ -285,7 +282,7 @@
             name: productName,
             amount: amount,
             buyer_email: 'test@example.com',
-            buyer_name: buyerName,
+            buyer_name: '홍길동',
         }, function (rsp) {
             console.log('=== 아임포트 응답 전체 ===');
             console.log(rsp);
@@ -361,7 +358,7 @@
         setTimeout(function() {
             // URL 파라미터에서 ID 가져오기
             const urlParams = new URLSearchParams(window.location.search);
-            const paramUserId = urlParams.get('uid');
+            const paramUserId = urlParams.get('id');
 
             // sessionStorage에서 ID 가져오기
             let savedUserId = sessionStorage.getItem('userId');
