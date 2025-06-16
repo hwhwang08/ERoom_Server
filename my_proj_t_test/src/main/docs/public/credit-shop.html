@@ -8,6 +8,10 @@
     <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
     <!-- jQuery 추가 -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.min.js" ></script>
+    <!--파베라이브러리불러오기-->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <title>결제창</title>
     <style>
         body {
@@ -184,8 +188,44 @@
     // 아임포트 객체 초기화 (중복 선언 X)
     IMP = window.IMP;
     IMP.init("imp55547674");  // 아임포트 고객사 식별코드
-
     let selectedOption = null;
+
+    let currentUserEmail = '';
+    let currentUserName = '';
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const uid = sessionStorage.getItem('userUid'); // 서버에서 전달한 UID
+        console.log('크샵 유아이디 값:', uid);
+
+        if (!uid) {
+            alert('UID가 없습니다. 다시 로그인해주세요.');
+            return;
+        }
+
+        // Firestore 초기화
+        const db = firebase.firestore();
+
+        db.collection('user_Datas')
+            .where('uid', '==', uid)
+            .get()
+            .then(snapshot => {
+                if (snapshot.empty) {
+                    console.log('해당 uid의 사용자 정보 없음');
+                    return;
+                }
+
+                const userData = snapshot.docs[0].data();
+                currentUserEmail = userData.email || '';
+                currentUserName = userData.nickname || '사용자';
+
+                console.log('✅ 사용자 이름:', currentUserName);
+                console.log('✅ 사용자 이메일:', currentUserEmail);
+            })
+            .catch(error => {
+                console.error('❌ 사용자 정보 조회 실패:', error);
+            });
+    });
+
 
     // sendToServer 함수를 전역으로 먼저 정의
     function sendToServer(rsp) {
@@ -281,8 +321,8 @@
             merchant_uid: `payment-${new Date().getTime()}`,
             name: productName,
             amount: amount,
-            buyer_email: 'test@example.com',
-            buyer_name: '홍길동',
+            buyer_email: currentUserEmail,
+            buyer_name: currentUserName,
         }, function (rsp) {
             console.log('=== 아임포트 응답 전체 ===');
             console.log(rsp);
