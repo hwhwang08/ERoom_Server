@@ -4,6 +4,7 @@ const path = require('path');
 const admin = require('firebase-admin');
 const https = require('https');
 const fs = require('fs');
+const session = require('express-session');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
@@ -39,11 +40,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// !!!! 세션
-const session = require('express-session');
-
 app.use(session({
-    secret: 'top_secret_key',  // 꼭 바꿔주세요
+    secret: process.env.SESSION_Key,  // 꼭 바꿔주세요
     resave: false,
     saveUninitialized: true,
     cookie: { secure: true }   // HTTPS 환경이면 true로 변경
@@ -245,7 +243,7 @@ app.get('/verify-token', async (req, res) => {
     }
 });
 
-// 유니티에서 보낸 토큰 받을 코드. !!!
+// 유니티에서 보낸 토큰 받는 코드.
 app.get('/save-uid', async (req, res) => {
     const uid = req.query.uid;
     console.log("받은 UID!! ", uid);
@@ -269,12 +267,9 @@ app.get('/save-uid', async (req, res) => {
 
 // 크샵
 app.get('/credit-shop', async (req, res) => {
-    console.log('크레딧샵 접속이오!!:');
-
     // req.params는 URL 경로에 /save-uid/:user_id 같이 Path Parameter를 사용할 때 쓰는 거.
     // ?uid=xxx처럼 쿼리스트링으로 보낸 건 req.query를 써야함
     // userId는 /:userId로 들어오는 그것. decodeURIComponent는 한글닉 처리
-
     const uid = req.session.uid;
 
     const result = await checkUserExists(uid);
@@ -293,13 +288,13 @@ app.get('/credit-shop', async (req, res) => {
         const modifiedHtml = data.replace(
             '</body>',
             `<script>
-        window.addEventListener('DOMContentLoaded', () => {
         // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
           const nickname = '${nickname}';
+          const uid = '${uid}';
           sessionStorage.setItem('userId', nickname);
+          sessionStorage.setItem('userUid', uid);
           const userIdElement = document.getElementById('user-id');
           if (userIdElement) userIdElement.textContent = nickname;
-        });
       </script></body>`
         );
         res.send(modifiedHtml);
@@ -322,9 +317,8 @@ app.post('/success', async (req, res) => {
             `<script>
     window.addEventListener('DOMContentLoaded', () => {
       const paymentData = ${JSON.stringify(paymentData)};
-      // 결제창
-      document.getElementById('orderId').textContent = paymentData.nickname;
       // 주문 번호
+      document.getElementById('orderId').textContent = paymentData.orderId || paymentData.merchant_uid || '-';
       document.getElementById('orderName').textContent = paymentData.orderName || '-';
       document.getElementById('amount').textContent = paymentData.amount ? Number(paymentData.amount).toLocaleString() + '원' : '-';
       document.getElementById('method').textContent = paymentData.method || '-';
@@ -335,47 +329,6 @@ app.post('/success', async (req, res) => {
         res.send(modifiedHtml);
     });
 });
-
-
-// 결제 성공창 처리. 결제 성공여부랑 유저 존재 여부를 받음.
-// app.get('/success.html', async (req, res) => {
-//     const userId = req.session.uid;
-//     console.log("서세스의 유저아이디", userId);
-//
-//     const htmlPath = path.join(__dirname, 'public', 'credit-shop.html');
-//     fs.readFile(htmlPath, 'utf8', (err, data) => {
-//         if (err) return res.status(500).send('파일 읽기 오류');
-//
-//         const modifiedHtml = data.replace(
-//             '</body>',
-//             `<script>
-//         window.addEventListener('DOMContentLoaded', () => {
-//         // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
-//           const nickname = '${userId}';
-//           sessionStorage.setItem('userId', nickname);
-//           const userIdElement = document.getElementById('user-id');
-//           if (userIdElement) userIdElement.textContent = nickname;
-//         });
-//       </script></body>`
-//         );
-//         res.send(modifiedHtml);
-//     });
-
-    // const filePath = path.join(__dirname, 'public', 'success.html');
-
-    // fs.readFile(filePath, 'utf8', (err, data) => {
-    //     if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
-    //     const modifiedHtml = data.replace(
-    //         '</body>',
-    //         `<script>
-    //      window.addEventListener('DOMContentLoaded', () => {
-    //        sessionStorage.setItem('userId', '${userId}');
-    //      });
-    //    </script></body>`
-    //     );
-    //     res.send(modifiedHtml);
-    // });
-// });
 
 // 아임포트 웹훅 처리용 엔드포인트
 app.post('/iamport-webhook', (req, res) => {
