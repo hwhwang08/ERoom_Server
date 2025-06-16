@@ -39,6 +39,17 @@ app.use((req, res, next) => {
     next();
 });
 
+// !!!! 세션
+const session = require('express-session');
+
+app.use(session({
+    secret: 'top_secret_key',  // 꼭 바꿔주세요
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: true }   // HTTPS 환경이면 true로 변경
+}));
+
+
 // Firebase에서 유저 존재 여부 확인 함수
 async function checkUserExists(uid) {
     try {
@@ -133,7 +144,7 @@ app.get('/payment-complete', async (req, res) => {
         const verified = await verifyPayment(imp_uid); // 아까 만든 결제 검증 함수 사용
         if (verified) {
             // 성공 페이지 보여주기
-            res.redirect(`/success.html?imp_uid=${imp_uid}&merchant_uid=${merchant_uid}`);
+            res.redirect(`/success?imp_uid=${imp_uid}&merchant_uid=${merchant_uid}`);
         } else {
             // 실패 페이지 보여주기
             res.redirect(`/fail.html?imp_uid=${imp_uid}&merchant_uid=${merchant_uid}`);
@@ -214,7 +225,6 @@ app.get('/verify-token', async (req, res) => {
 
         // !!! loginHistory콜렉션조회해서 해당 uid기록 있는지 확인. 추후 userData는 내가 만든 임시 콜렉션
         const result = await checkUserExists(uid);
-        console.log(result.userExists);  // true or false
         console.log(result.userdata);    // 배열 형태로 사용자 데이터
 
         // const nickname = result.userdata;
@@ -227,6 +237,7 @@ app.get('/verify-token', async (req, res) => {
             uid,
             nickname,
             message: '토큰 검증 성공했습니다!!',
+            redirectUrl: `https://192.168.0.170:7999/save-uid?uid=${uid}`
         });
     } catch (error) {
         console.error('토큰 검증 실패:', error);
@@ -234,105 +245,137 @@ app.get('/verify-token', async (req, res) => {
     }
 });
 
-// 사용자별 크레딧 상점 페이지
-app.get('/:user_id/credit-shop.html', async (req, res) => {
-    // userId가 /:userId로 들어오는 그것. decodeURIComponent는 한글닉 처리
-    const userid = decodeURIComponent(req.params.user_id);
+// 유니티에서 보낸 토큰 받을 코드. !!!
+app.get('/save-uid', async (req, res) => {
+    const uid = req.query.uid;
+    console.log("받은 UID!! ", uid);
 
     try {
-        // 닉네임으로 사용자 조회
-        const userdata = await db.collection('user_Datas')
-            .where("nickname", "==", userid)
-            .get();
-        // 파베에 일치하는 유저 닉 없을시 인덱스로
-        if (userdata.empty) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userid));
+        const result = await checkUserExists(uid);
+        console.log("유저 존재 여부:", result.userExists);
+        console.log("유저 데이터:", result.userdata);    // 배열 형태로 사용자 데이터
 
-        // credit-shop.html 로딩
-        const filePath = path.join(__dirname, 'public', 'credit-shop.html');
-        if (!fs.existsSync(filePath)) return res.status(404).send('credit-shop.html 파일을 찾을 수 없습니다.');
-        fs.readFile(filePath, 'utf8', (err, data) => {
-            if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
-
-            const modifiedHtml = data.replace(
-                '</body>',
-                `<script>
-                window.addEventListener('DOMContentLoaded', () => {
-                    // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
-                    const decodedUserId = decodeURIComponent('${userid}');
-                    sessionStorage.setItem('userId', decodedUserId);
-                    const userIdElement = document.getElementById('user-id');
-                    if (userIdElement) userIdElement.textContent = decodedUserId;
-                });
-                </script></body>`
-            );
-
-            res.send(modifiedHtml);
-        });
+        // 필요에 따라 조건 분기도 가능
+        if (result.userExists) {
+            req.session.uid = uid;  // 세션에 uid 저장
+            return res.redirect('/credit-shop');
+        } else res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
     } catch (error) {
-        console.error("에러 발생:", error);
-        res.status(500).send('서버 에러');
+        console.error("오류 발생:", error);
+        res.status(500).send('서버 오류 발생');
     }
 });
 
-// 결제 성공창 처리. 검증 끝난 결제 정보를 success페이지로 넘김
-app.post('/:userId/success.html', async (req, res) => {
-    const userId = req.params.userId;
-    if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-    const filePath = path.join(__dirname, 'public', 'success.html');
-    fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
-        const paymentData = { ...req.body, userId };
+
+// 크샵
+app.get('/credit-shop', async (req, res) => {
+    console.log('크레딧샵 접속이오!!:');
+
+    // req.params는 URL 경로에 /save-uid/:user_id 같이 Path Parameter를 사용할 때 쓰는 거.
+    // ?uid=xxx처럼 쿼리스트링으로 보낸 건 req.query를 써야함
+    // userId는 /:userId로 들어오는 그것. decodeURIComponent는 한글닉 처리
+
+    const uid = req.session.uid;
+
+    const result = await checkUserExists(uid);
+    // encodeURIComponent할시 %ed%dj%어쩌구로 나오는것.
+    // const userid = encodeURIComponent(result.userdata[0]?.nickname || 'unknown');
+    // 닉네임 꺼내기 (userdatas 배열에서 첫 번째 닉네임, 없으면 'unknown')
+    const nickname = result.userdata[0]?.nickname || 'unknown';
+    req.session.nickname = nickname;
+    console.log('접속 완. 닉네임:', nickname);
+
+    // 화면을 띄우는것.
+    const htmlPath = path.join(__dirname, 'public', 'credit-shop.html');
+    fs.readFile(htmlPath, 'utf8', (err, data) => {
+        if (err) return res.status(500).send('파일 읽기 오류');
+
         const modifiedHtml = data.replace(
             '</body>',
             `<script>
-         window.addEventListener('DOMContentLoaded', () => {
-           const paymentData = ${JSON.stringify(paymentData)};
-           document.getElementById('userId').textContent = paymentData.userId || '-';
-           document.getElementById('orderId').textContent = paymentData.orderId || '-';
-           document.getElementById('orderName').textContent = paymentData.orderName || '-';
-           document.getElementById('amount').textContent = paymentData.amount ? Number(paymentData.amount).toLocaleString() + '원' : '-';
-           document.getElementById('method').textContent = paymentData.method || '-';
-           const backLink = document.getElementById('back-to-shop');
-           if (backLink) backLink.href = '/' + paymentData.userId + '/credit-shop.html';
-
-           window.paymentData = paymentData;
-
-           if (paymentData.paymentKey && paymentData.orderId && paymentData.amount) {
-             // confirmPayment 함수 정의 필요
-             confirmPayment(paymentData.paymentKey, paymentData.orderId, paymentData.amount);
-           }
-           if (paymentData.userId && paymentData.amount && paymentData.creditAmount) {
-             // sendPurchaseInfo 함수 정의 필요
-             sendPurchaseInfo(paymentData.userId, paymentData.creditAmount, paymentData.amount);
-           }
-         });
-       </script></body>`
+        window.addEventListener('DOMContentLoaded', () => {
+        // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
+          const nickname = '${nickname}';
+          sessionStorage.setItem('userId', nickname);
+          const userIdElement = document.getElementById('user-id');
+          if (userIdElement) userIdElement.textContent = nickname;
+        });
+      </script></body>`
         );
         res.send(modifiedHtml);
     });
 });
+
+// 결제 성공창 처리. 검증 끝난 결제 정보를 success 페이지로 넘김
+app.post('/success', async (req, res) => {
+    const nickname = req.session.nickname || 'unknown';
+    console.log("서세스 유저 아이디", nickname);
+
+    const paymentData = { ...req.body, nickname };
+
+    const filePath = path.join(__dirname, 'public', 'success.html');
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
+
+        const modifiedHtml = data.replace(
+            '</body>',
+            `<script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const paymentData = ${JSON.stringify(paymentData)};
+      // 결제창
+      document.getElementById('orderId').textContent = paymentData.nickname;
+      // 주문 번호
+      document.getElementById('orderName').textContent = paymentData.orderName || '-';
+      document.getElementById('amount').textContent = paymentData.amount ? Number(paymentData.amount).toLocaleString() + '원' : '-';
+      document.getElementById('method').textContent = paymentData.method || '-';
+      window.paymentData = paymentData;
+    });
+    </script></body>`
+        );
+        res.send(modifiedHtml);
+    });
+});
+
 
 // 결제 성공창 처리. 결제 성공여부랑 유저 존재 여부를 받음.
-app.get('/:userId/success.html', async (req, res) => {
-    const userId = req.params.userId;
-    if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-    const filePath = path.join(__dirname, 'public', 'success.html');
+// app.get('/success.html', async (req, res) => {
+//     const userId = req.session.uid;
+//     console.log("서세스의 유저아이디", userId);
+//
+//     const htmlPath = path.join(__dirname, 'public', 'credit-shop.html');
+//     fs.readFile(htmlPath, 'utf8', (err, data) => {
+//         if (err) return res.status(500).send('파일 읽기 오류');
+//
+//         const modifiedHtml = data.replace(
+//             '</body>',
+//             `<script>
+//         window.addEventListener('DOMContentLoaded', () => {
+//         // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
+//           const nickname = '${userId}';
+//           sessionStorage.setItem('userId', nickname);
+//           const userIdElement = document.getElementById('user-id');
+//           if (userIdElement) userIdElement.textContent = nickname;
+//         });
+//       </script></body>`
+//         );
+//         res.send(modifiedHtml);
+//     });
 
-    fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
-        const modifiedHtml = data.replace(
-            '</body>',
-            `<script>
-         window.addEventListener('DOMContentLoaded', () => {
-           sessionStorage.setItem('userId', '${userId}');
-         });
-       </script></body>`
-        );
-        res.send(modifiedHtml);
-    });
-});
+    // const filePath = path.join(__dirname, 'public', 'success.html');
+
+    // fs.readFile(filePath, 'utf8', (err, data) => {
+    //     if (err) return res.status(500).send('파일을 읽을 수 없습니다.');
+    //     const modifiedHtml = data.replace(
+    //         '</body>',
+    //         `<script>
+    //      window.addEventListener('DOMContentLoaded', () => {
+    //        sessionStorage.setItem('userId', '${userId}');
+    //      });
+    //    </script></body>`
+    //     );
+    //     res.send(modifiedHtml);
+    // });
+// });
 
 // 아임포트 웹훅 처리용 엔드포인트
 app.post('/iamport-webhook', (req, res) => {
@@ -340,14 +383,6 @@ app.post('/iamport-webhook', (req, res) => {
 
     // 여기에 결제 정보 검증/처리 로직 작성
     res.status(200).send('웹훅 OK'); // 아임포트가 성공했다고 인식하려면 반드시 200을 반환해야 함
-});
-
-// 사용자 ID 루트 접근
-app.get('/:userId', async (req, res) => {
-    const userId = req.params.userId;
-    if (!validateUserId(userId)) return res.redirect('/?error=invalid_format&attempted_id=' + encodeURIComponent(userId));
-    if (!(await checkUserExists(userId))) return res.redirect('/?error=user_not_found&attempted_id=' + encodeURIComponent(userId));
-    res.redirect(`/${userId}/credit-shop.html`);
 });
 
 // HTTPS 서버 실행

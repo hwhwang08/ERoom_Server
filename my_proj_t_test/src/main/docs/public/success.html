@@ -151,7 +151,7 @@
         // 뒤로가기 링크 설정
         const backLink = document.getElementById('back-to-shop');
         if (backLink && userId) {
-            backLink.href = `/${userId}/credit-shop.html`;
+            backLink.href = '/credit-shop';
         } else {
             backLink.href = '/';
         }
@@ -169,15 +169,10 @@
             confirmPayment(paymentKey, orderId, amount);
         }
 
-        if (userId && amount && creditAmount) {
-            sendPurchaseInfo(userId, creditAmount, amount).then(success => {
-                if (success) {
-                    console.log('크레딧 구매 정보가 성공적으로 전송되었습니다.');
-                } else {
-                    console.warn('크레딧 구매 정보 전송에 실패했습니다.');
-                }
+        if (userId && amount && creditAmount) sendPurchaseInfo(userId, creditAmount, amount).then(success => {
+                if (success) console.log('크레딧 구매 정보가 성공적으로 전송되었습니다.');
+                else console.warn('크레딧 구매 정보 전송에 실패했습니다.');
             });
-        }
     });
 
     function confirmPayment(paymentKey, orderId, amount) {
