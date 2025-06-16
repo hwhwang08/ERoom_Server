@@ -202,7 +202,7 @@
         };
 
         // 사용자 ID 가져오기
-        const userId = document.getElementById('user-id').textContent;
+        const userId = encodeURIComponent(document.getElementById('user-id').textContent);
 
         // GET 방식으로 Query Parameter 생성
         const queryParams = new URLSearchParams(paymentData);
@@ -242,7 +242,7 @@
         // form을 동적으로 생성하여 POST 방식으로 데이터 전송
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/${userId}/success.html`;
+        form.action = '/success';
         form.style.display = 'none';
 
         // userId도 포함해서 전달
@@ -347,40 +347,6 @@
             this.classList.add('selected');
             selectedOption = this;
         });
-    });
-
-    // 기존 사용자 ID 확인 로직을 수정
-    // 페이지 로드 시 URL 파라미터와 sessionStorage에서 userId 가져오기
-    document.addEventListener('DOMContentLoaded', function() {
-        const userIdSpan = document.getElementById('user-id');
-
-        // 잠시 대기 후 사용자 ID 확인 (서버에서 설정하는 스크립트가 먼저 실행되도록)
-        setTimeout(function() {
-            // URL 파라미터에서 ID 가져오기
-            const urlParams = new URLSearchParams(window.location.search);
-            const paramUserId = urlParams.get('id');
-
-            // sessionStorage에서 ID 가져오기
-            let savedUserId = sessionStorage.getItem('userId');
-
-            // URL에서 사용자 ID 추출 (/:userId/credit-shop.html 형식)
-            const pathSegments = window.location.pathname.split('/');
-            // decodeURIComponent한글 깨짐 처리
-            const pathUserId = decodeURIComponent(pathSegments[1]);
-
-            // 우선순위: URL 경로 > URL 파라미터 > sessionStorage
-            const userId = pathUserId || paramUserId || savedUserId;
-
-            if (userId && userId !== '' && userId !== 'credit-shop.html') {
-                userIdSpan.textContent = userId;
-                sessionStorage.setItem('userId', userId); // 세션 스토리지 업데이트
-                console.log("현재 사용자 UID:", userId);
-            } else {
-                console.log('사용자 ID를 찾을 수 없어 메인 페이지로 리다이렉트');
-                // ID가 없으면 메인 페이지로 리다이렉트 (상대 경로 사용하지 않음)
-                window.location.href = '/';
-            }
-        }, 100); // 100ms 대기
     });
 </script>
 </body>
