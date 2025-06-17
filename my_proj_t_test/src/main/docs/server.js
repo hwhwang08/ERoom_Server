@@ -18,7 +18,9 @@ const httpsOptions = {
 };
 
 // Firebase Admin 초기화. 경로는 .env에 넣고 불러오는 걸 추천
-const serviceAccountPath = process.env.FIREBASE_CREDENTIAL_PATH || '../../../src/main/resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json';
+// 또는 더 확실한 방법
+const serviceAccountPath = process.env.FIREBASE_CREDENTIAL_PATH ||
+    path.resolve(process.cwd(), 'src/main/resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
 const serviceAccount = require(path.resolve(serviceAccountPath));
 
 admin.initializeApp({
@@ -73,14 +75,20 @@ async function checkUserExists(uid) {
 app.get('/verify-user-and-payment', async (req, res) => {
     try {
         const authHeader = req.headers['authorization'];
-        if (!authHeader) return res.status(401).json({ success: false, userExists: false, message: 'Authorization 헤더가 필요합니다' });
+        if (!authHeader) {
+            return res.status(401).json({ success: false, userExists: false, message: 'Authorization 헤더가 필요합니다' });
+        }
 
         const userId = authHeader.replace('Bearer ', '').trim();
-        if (!userId || !validateUserId(userId)) return res.status(401).json({ success: false, userExists: false, message: '유효하지 않은 Authorization 헤더 형식입니다' });
+        if (!userId || !validateUserId(userId)) {
+            return res.status(401).json({ success: false, userExists: false, message: '유효하지 않은 Authorization 헤더 형식입니다' });
+        }
 
         const userExists = await checkUserExists(userId);
 
-        if (!userExists) return res.status(404).json({ success: false, userExists: false, message: '존재하지 않는 사용자입니다' });
+        if (!userExists) {
+            return res.status(404).json({ success: false, userExists: false, message: '존재하지 않는 사용자입니다' });
+        }
 
         const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.query;
 

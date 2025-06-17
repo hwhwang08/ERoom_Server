@@ -1,9 +1,14 @@
 {
-  "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/",
-      "destination": "/credit-shop.html"
+      "src": "src/main/docs/server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "src/main/docs/server.js"
     }
   ]
 }
