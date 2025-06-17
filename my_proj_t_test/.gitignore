@@ -42,6 +42,7 @@ build/
 src/main/docs/public/firebase-config.js
 src/main/resources/*.json
 *key.pem
+src/main/java/com/hwang/Studies/Jami_API.java
 .crt
 .csr
 .key

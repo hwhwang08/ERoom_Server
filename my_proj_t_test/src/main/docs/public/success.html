@@ -151,9 +151,9 @@
         // 뒤로가기 링크 설정
         const backLink = document.getElementById('back-to-shop');
         if (backLink && userId) {
-            backLink.href = '/credit-shop';
-        } else {
             backLink.href = '/';
+        } else {
+            backLink.href = '/login';
         }
 
         // 결제 정보 표시

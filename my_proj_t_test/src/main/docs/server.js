@@ -51,16 +51,15 @@ app.use(session({
 // Firebase에서 유저 존재 여부 확인 함수
 async function checkUserExists(uid) {
     try {
-        // 파이어베이스 loginhistory콜렉션 기반으로 userId일치를 확인하는 코드.
-        const querySnapshot = await db.collection('loginHistory')
-            .where("userId", "==", uid)
-            .get();
+        // 파이어베이스 user_Datas 콜렉션 기반으로 uid일치를 확인하는 코드.
         const userdata = await db.collection('user_Datas')
             .where("uid", "==", uid)
             .get();
 
+        const userDataArray = userdata.docs.map(doc => doc.data());
+
         return {
-            userExists: !querySnapshot.empty,
+            userExists: !userdata.empty,
             userdata: userdata.docs.map(doc => doc.data()) // 배열로 파싱
         };
     } catch (error) {
@@ -195,9 +194,42 @@ app.get('/firebase-config.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'firebase-config.js'));
 });
 
-// 기본 루트
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// 기본 루트 크레딧샵
+app.get('/', async (req, res) => {
+    // res.sendFile(path.join(__dirname, 'public', 'credit-shop.html'));
+    // req.params는 URL 경로에 /save-uid/:user_id 같이 Path Parameter를 사용할 때 쓰는 거.
+    // ?uid=xxx처럼 쿼리스트링으로 보낸 건 req.query를 써야함
+    // userId는 /:userId로 들어오는 그것. decodeURIComponent는 한글닉 처리
+    const uid = req.session.uid;
+    if (!uid) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
+
+    const result = await checkUserExists(uid);
+    // encodeURIComponent할시 %ed%dj%어쩌구로 나오는것.
+    // const userid = encodeURIComponent(result.userdata[0]?.nickname || 'unknown');
+    // 닉네임 꺼내기 (userdatas 배열에서 첫 번째 닉네임, 없으면 'unknown')
+    const nickname = result.userdata[0]?.nickname || 'unknown';
+    req.session.nickname = nickname;
+    console.log('접속 완. 닉네임:', nickname);
+
+    // 화면을 띄우는것.
+    const htmlPath = path.join(__dirname, 'public', 'credit-shop.html');
+    fs.readFile(htmlPath, 'utf8', (err, data) => {
+        if (err) return res.status(500).send('파일 읽기 오류');
+
+        const modifiedHtml = data.replace(
+            '</body>',
+            `<script>
+        // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
+          const nickname = '${nickname}';
+          const uid = '${uid}';
+          sessionStorage.setItem('userId', nickname);
+          sessionStorage.setItem('userUid', uid);
+          const userIdElement = document.getElementById('user-id');
+          if (userIdElement) userIdElement.textContent = nickname;
+          </script></body>`
+        );
+        res.send(modifiedHtml);
+    });
 });
 
 // Firebase ID 토큰 검증 - 기존 '/' → '/verify-token' 으로 변경 !!! 혜주님과 연동하는 코드
@@ -256,7 +288,7 @@ app.get('/save-uid', async (req, res) => {
         // 필요에 따라 조건 분기도 가능
         if (result.userExists) {
             req.session.uid = uid;  // 세션에 uid 저장
-            return res.redirect('/credit-shop');
+            return res.redirect('/');
         } else res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
     } catch (error) {
         console.error("오류 발생:", error);
@@ -264,41 +296,9 @@ app.get('/save-uid', async (req, res) => {
     }
 });
 
-
-// 크샵
-app.get('/credit-shop', async (req, res) => {
-    // req.params는 URL 경로에 /save-uid/:user_id 같이 Path Parameter를 사용할 때 쓰는 거.
-    // ?uid=xxx처럼 쿼리스트링으로 보낸 건 req.query를 써야함
-    // userId는 /:userId로 들어오는 그것. decodeURIComponent는 한글닉 처리
-    const uid = req.session.uid;
-
-    const result = await checkUserExists(uid);
-    // encodeURIComponent할시 %ed%dj%어쩌구로 나오는것.
-    // const userid = encodeURIComponent(result.userdata[0]?.nickname || 'unknown');
-    // 닉네임 꺼내기 (userdatas 배열에서 첫 번째 닉네임, 없으면 'unknown')
-    const nickname = result.userdata[0]?.nickname || 'unknown';
-    req.session.nickname = nickname;
-    console.log('접속 완. 닉네임:', nickname);
-
-    // 화면을 띄우는것.
-    const htmlPath = path.join(__dirname, 'public', 'credit-shop.html');
-    fs.readFile(htmlPath, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('파일 읽기 오류');
-
-        const modifiedHtml = data.replace(
-            '</body>',
-            `<script>
-        // userid가 인코딩된 상태라서 디코딩 필요. 유니티로 할떄 한글 안깨지게 하는것.
-          const nickname = '${nickname}';
-          const uid = '${uid}';
-          sessionStorage.setItem('userId', nickname);
-          sessionStorage.setItem('userUid', uid);
-          const userIdElement = document.getElementById('user-id');
-          if (userIdElement) userIdElement.textContent = nickname;
-      </script></body>`
-        );
-        res.send(modifiedHtml);
-    });
+app.get('/login', async (req, res) => {
+    console.log('로그인 이동');
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // 결제 성공창 처리. 검증 끝난 결제 정보를 success 페이지로 넘김
@@ -343,6 +343,5 @@ app.post('/iamport-webhook', (req, res) => {
 // '0.0.0.0'은 모든 네트워크 인터페이스에서(ip)접근 허용한단뜻. 위의 방식대로는 유니티랑 연동이 안된다는데..
 https.createServer(httpsOptions, app).listen(PORT_HTTPS, '0.0.0.0', () => {
     console.log(`HTTPS 서버 실행 중: https://localhost:${PORT_HTTPS}`);
-    console.log(`사용자별 크레딧 상점 예시: https://localhost:${PORT_HTTPS}/user_alice_123`);
     console.log(`토큰 테스트용 임시 로그인: https://localhost:${PORT_HTTPS}/test_login.html`);
 });
