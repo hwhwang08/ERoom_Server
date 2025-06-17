@@ -1,5 +1,9 @@
 {
-  "type": "module",
+  "scripts": {
+    "build": "echo 'build step skipped'",
+    "start": "node src/main/docs/server.js",
+    "dev": "node src/main/docs/server.js"
+  },
   "dependencies": {
     "axios": "^1.10.0",
     "cors": "^2.8.5",
