@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "public": "public",
   "rewrites": [
     {
       "source": "/",
