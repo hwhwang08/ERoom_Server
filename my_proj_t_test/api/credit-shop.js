@@ -1,6 +1,6 @@
 // /api/get-credit-shop.js
 
-import { checkUserExists } from '../../src/main/docs/server'; // 실제 경로에 맞춰 조정
+import { checkUserExists } from '../../src/main/docs/server.js'; // 실제 경로에 맞춰 조정
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'GET만 허용됨' });

@@ -1,7 +1,7 @@
 // /api/verify-token.js
 
 import admin from '../src/main/docs/public/firebase-config'; // 별도 분리한 firebase-admin 초기화 코드
-import { checkUserExists } from '../src/main/docs/server'; // DB 체크 함수
+import { checkUserExists } from '../src/main/docs/server.js'; // DB 체크 함수
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).end('Method Not Allowed');
