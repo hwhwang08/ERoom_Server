@@ -185,6 +185,8 @@
     <button id="purchase-button" class="purchase-button" onclick="requestpay()">구매하기</button>
 </div>
 <script>
+    window.onload = init;
+
     // 아임포트 객체 초기화 (중복 선언 X)
     IMP = window.IMP;
     IMP.init("imp55547674");  // 아임포트 고객사 식별코드
@@ -193,13 +195,29 @@
     let currentUserEmail = '';
     let currentUserName = '';
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
         const uid = sessionStorage.getItem('userUid'); // 서버에서 전달한 UID
         console.log('크샵 유아이디 값:', uid);
 
         if (!uid) {
             alert('UID가 없습니다. 다시 로그인해주세요.');
+            window.location.href = '/login.html';
             return;
+        }
+
+        // 닉네임 가져오는 부분 (기존 init 함수)
+        try {
+            const res = await fetch(`/api/get-credit-shop?uid=${encodeURIComponent(uid)}`);
+            const data = await res.json();
+            if (data.success) {
+                sessionStorage.setItem('userId', data.nickname);
+                const el = document.getElementById('user-id');
+                if (el) el.textContent = data.nickname;
+            } else {
+                console.error('닉네임 조회 실패:', data);
+            }
+        } catch (e) {
+            console.error('API 호출 오류:', e);
         }
 
         // Firestore 초기화
