@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>사용자 인증</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -213,41 +214,7 @@
 
         // Firebase Firestore 초기화
         const db = firebase.firestore();
-        const usersCollection = db.collection('loginHistory');
-
-        // URL 파라미터에서 오류 정보 확인
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const attemptedId = urlParams.get('attempted_id');
-
-        if (error) {
-            let errorText = '';
-            let mainText = '';
-            
-            switch (error) {
-                case 'user_not_found':
-                    errorText = `사용자 ID "${attemptedId}"가 Firebase에 등록되지 않았습니다.`;
-                    mainText = '올바른 사용자 ID를 입력하여 다시 시도하세요.';
-                    if (attemptedId) {
-                        userIdInput.value = attemptedId;
-                    }
-                    break;
-                case 'verification_failed':
-                    errorText = '사용자 확인 중 오류가 발생했습니다.';
-                    mainText = '다시 시도해주세요.';
-                    break;
-                default:
-                    errorText = '알 수 없는 오류가 발생했습니다.';
-                    mainText = '다시 시도해주세요.';
-            }
-            
-            errorAlert.style.display = 'block';
-            errorAlertMessage.textContent = errorText;
-            mainMessage.textContent = mainText;
-            
-            // URL에서 파라미터 제거
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        const usersCollection = db.collection('user_Datas');
 
         // 실시간 유효성 검사
         userIdInput.addEventListener('input', function() {
@@ -289,14 +256,14 @@
                 // Firebase에서 사용자 ID 확인
                 // const userDoc = await usersCollection.doc(userId).get();
                 const querySnapshot = await usersCollection
-                    .where("userId", "==", userId)
+                    .where("uid", "==", userId)
                     .get();
 
                 if (!querySnapshot.empty) {
                     // 사용자 ID가 존재하는 경우
                     console.log('Firebase에서 사용자 ID 확인 완료:', userId);
-                    sessionStorage.setItem('userId', userId);
-                    window.location.href = `/${userId}`;
+                    sessionStorage.setItem('uid', userId);
+                    window.location.href = '/save-uid?uid=' + userId;
                 } else {
                     // 존재하지 않는 사용자 ID
                     console.log('존재하지 않는 사용자 ID:', userId);
@@ -326,7 +293,6 @@
         });
 
         // 페이지 로드 시 입력 필드 초기화 (URL 파라미터에서 가져온 경우 제외)
-        if (!attemptedId) userIdInput.value = '';
         if (userIdInput.value) {
             // 입력값이 있으면 유효성 검사 실행
             userIdInput.dispatchEvent(new Event('input'));
