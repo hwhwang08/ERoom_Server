@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/credit-shop.html" }
+    { "source": "/", "destination": "/src/main/docs/public/credit-shop.html" }
   ]
 }
