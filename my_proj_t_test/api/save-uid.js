@@ -1,7 +1,7 @@
 // api/save-uid.js
-const { checkUserExists } = require('../src/main/docs/server');
+import { checkUserExists } from '../src/main/docs/server.js'; // 확장자 필수일 수 있음
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     const { uid } = req.query;
     console.log("받은 UID!! ", uid);
 
@@ -19,4 +19,4 @@ module.exports = async (req, res) => {
         console.error("오류 발생:", error);
         return res.status(500).send('서버 오류 발생');
     }
-};
+}
