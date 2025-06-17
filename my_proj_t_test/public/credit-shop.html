@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 아임포트 연동-->
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+    <!-- jQuery 추가 -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.min.js" ></script>
+    <!--파베라이브러리불러오기-->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <title>결제창</title>
+    <style>
+        body {
+            font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .user-info {
+            background-color: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .user-id {
+            font-weight: bold;
+            color: #1c6fdc;
+        }
+
+        .credit-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .credit-option {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 25px 20px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .credit-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .credit-option.selected {
+            border-color: #3182f6;
+            background-color: #f8f9ff;
+        }
+
+        .credit-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .credit-price {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .purchase-button {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            background-color: #3182f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .purchase-button:hover {
+            background-color: #1c6fdc;
+        }
+
+        .purchase-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .most-popular {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .most-popular::before {
+            content: '인기';
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #ff5722;
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+            transform: rotate(45deg) translateX(10px) translateY(-10px);
+            width: 80px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>크레딧 상점</h1>
+        <div class="user-info">
+            사용자: <span id="user-id" class="user-id">로딩중...</span>
+        </div>
+    </header>
+    <div class="credit-options">
+        <div class="credit-option" data-credit="100" data-price="1000">
+            <div class="credit-amount">100 크레딧</div>
+            <div class="credit-price">1,000원</div>
+        </div>
+
+        <div class="credit-option" data-credit="300" data-price="2700">
+            <div class="credit-amount">300 크레딧</div>
+            <div class="credit-price">2,700원</div>
+            <div class="credit-bonus">10% 추가 적립</div>
+        </div>
+
+        <div class="credit-option most-popular" data-credit="500" data-price="4000">
+            <div class="credit-amount">500 크레딧</div>
+            <div class="credit-price">4,000원</div>
+            <div class="credit-bonus">20% 추가 적립</div>
+        </div>
+
+        <div class="credit-option" data-credit="1000" data-price="7500">
+            <div class="credit-amount">1,000 크레딧</div>
+            <div class="credit-price">7,500원</div>
+            <div class="credit-bonus">25% 추가 적립</div>
+        </div>
+
+        <div class="credit-option" data-credit="2000" data-price="14000">
+            <div class="credit-amount">2,000 크레딧</div>
+            <div class="credit-price">14,000원</div>
+            <div class="credit-bonus">30% 추가 적립</div>
+        </div>
+
+        <div class="credit-option" data-credit="5000" data-price="30000">
+            <div class="credit-amount">5,000 크레딧</div>
+            <div class="credit-price">30,000원</div>
+            <div class="credit-bonus">50% 추가 적립</div>
+        </div>
+    </div>
+    <button id="purchase-button" class="purchase-button" onclick="requestpay()">구매하기</button>
+</div>
+<script>
+    window.onload = init;
+
+    // 아임포트 객체 초기화 (중복 선언 X)
+    IMP = window.IMP;
+    IMP.init("imp55547674");  // 아임포트 고객사 식별코드
+    let selectedOption = null;
+
+    let currentUserEmail = '';
+    let currentUserName = '';
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        const uid = sessionStorage.getItem('userUid'); // 서버에서 전달한 UID
+        console.log('크샵 유아이디 값:', uid);
+
+        if (!uid) {
+            alert('UID가 없습니다. 다시 로그인해주세요.');
+            window.location.href = '/login.html';
+            return;
+        }
+
+        // 닉네임 가져오는 부분 (기존 init 함수)
+        try {
+            const res = await fetch(`/api/get-credit-shop?uid=${encodeURIComponent(uid)}`);
+            const data = await res.json();
+            if (data.success) {
+                sessionStorage.setItem('userId', data.nickname);
+                const el = document.getElementById('user-id');
+                if (el) el.textContent = data.nickname;
+            } else {
+                console.error('닉네임 조회 실패:', data);
+            }
+        } catch (e) {
+            console.error('API 호출 오류:', e);
+        }
+
+        // Firestore 초기화
+        const db = firebase.firestore();
+
+        db.collection('user_Datas')
+            .where('uid', '==', uid)
+            .get()
+            .then(snapshot => {
+                if (snapshot.empty) {
+                    console.log('해당 uid의 사용자 정보 없음');
+                    return;
+                }
+
+                const userData = snapshot.docs[0].data();
+                currentUserEmail = userData.email || '';
+                currentUserName = userData.nickname || '사용자';
+
+                console.log('✅ 사용자 이름:', currentUserName);
+                console.log('✅ 사용자 이메일:', currentUserEmail);
+            })
+            .catch(error => {
+                console.error('❌ 사용자 정보 조회 실패:', error);
+            });
+    });
+
+
+    // sendToServer 함수를 전역으로 먼저 정의
+    function sendToServer(rsp) {
+        console.log('서버로 전송할 결제 정보:', rsp);
+
+        // 결제 데이터 준비
+        const paymentData = {
+            orderId: rsp.merchant_uid,
+            amount: selectedOption.getAttribute('data-price'),
+            orderName: selectedOption.querySelector('.credit-amount').textContent,
+            method: rsp.pay_method || '카드',
+            paymentKey: rsp.imp_uid,
+            creditAmount: selectedOption.getAttribute('data-credit')
+        };
+
+        // 사용자 ID 가져오기
+        const userId = encodeURIComponent(document.getElementById('user-id').textContent);
+
+        // GET 방식으로 Query Parameter 생성
+        const queryParams = new URLSearchParams(paymentData);
+        const url = `https://localhost:7999/verify-user-and-payment?${queryParams.toString()}`;
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${userId}`
+            },
+            success: function(response) {
+                console.log('서버 응답:', response);
+
+                if (response.success && response.userExists) {
+                    // 유저 존재 확인 완료 - success 페이지로 이동
+                    redirectToSuccessWithHttpData(response.paymentData, userId);
+                } else {
+                    alert('사용자 검증 실패: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('서버 통신 실패:', xhr.responseText);
+
+                // 401 Unauthorized 처리
+                if (xhr.status === 401) {
+                    alert('인증 실패: Authorization 헤더가 유효하지 않습니다.');
+                } else {
+                    alert('서버 통신 실패: ' + error);
+                }
+            }
+        });
+    }
+
+    // HTTP 방식으로 success 페이지에 데이터 전달하는 함수도 전역으로 정의
+    function redirectToSuccessWithHttpData(paymentData, userId) {
+        // form을 동적으로 생성하여 POST 방식으로 데이터 전송
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/success';
+        form.style.display = 'none';
+
+        // userId도 포함해서 전달
+        const input_userId = document.createElement('input');
+        input_userId.type = 'hidden';
+        input_userId.name = 'userId';
+        input_userId.value = userId;
+        form.appendChild(input_userId);
+
+        // 각 데이터를 hidden input으로 추가
+        Object.keys(paymentData).forEach(key => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = paymentData[key];
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function requestpay() {
+        if (!selectedOption) {
+            alert("상품을 선택해주세요!");
+            return;
+        }
+        const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
+        const amount = parseInt(selectedOption.getAttribute('data-price'));
+
+        IMP.request_pay({
+            pg: 'nice_v2',
+            // pg: 'kakaopay',
+            // pg: 'tosspay',
+            pay_method: 'card',
+            merchant_uid: `payment-${new Date().getTime()}`,
+            name: productName,
+            amount: amount,
+            buyer_email: currentUserEmail,
+            buyer_name: currentUserName,
+        }, function (rsp) {
+            console.log('=== 아임포트 응답 전체 ===');
+            console.log(rsp);
+            console.log('imp_uid:', rsp.imp_uid);
+            console.log('merchant_uid:', rsp.merchant_uid);
+            console.log('성공여부:', rsp.success);
+            console.log('실패여부:', rsp.error_code);
+            console.log('rsp 여부:', rsp);
+            console.log('========================');
+
+            if(rsp.error_code) {
+                console.log('결제 실패/취소 처리');
+                console.log('상세 정보:', {
+                imp_uid: rsp.imp_uid,
+                merchant_uid: rsp.merchant_uid,
+                error_code: rsp.error_code,
+                error_msg: rsp.error_msg
+            });
+                // 실제 에러 메시지가 있는 경우만 알림
+                if (rsp.error_msg) {
+                    alert('결제 실패: ' + rsp.error_msg);
+                } else {
+                    console.log('사용자 취소로 추정 - 알림 없음');
+                }
+            // } else if (!rsp.success) {
+                // 카카오페이용. 나이스페이할거면 주석처리할것
+            //     const iframes = document.querySelectorAll("iframe");
+            //     iframes.forEach(iframe => iframe.remove());
+            //     console.log('결제 실패/취소 처리');
+            //     console.log('상세 정보:', {
+            //         imp_uid: rsp.imp_uid,
+            //         merchant_uid: rsp.merchant_uid,
+            //         error_code: rsp.error_code,
+            //         error_msg: rsp.error_msg
+            //     });
+            //     // 실제 에러 메시지가 있는 경우만 알림
+            //     if (rsp.error_msg) {
+            //         alert('결제 실패: ' + rsp.error_msg);
+            //     } else {
+            //         console.log('사용자 취소로 추정 - 알림 없음');
+            //     }
+            } else if (rsp.imp_uid && rsp.merchant_uid) {
+            // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
+                console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
+                sessionStorage.setItem('orderId', rsp.merchant_uid);
+                sessionStorage.setItem('amount', amount.toString());
+                sessionStorage.setItem('orderName', productName);
+                sessionStorage.setItem('method', rsp.pay_method || '카드');
+                sessionStorage.setItem('paymentKey', rsp.imp_uid);
+                sessionStorage.setItem('creditAmount', selectedOption.getAttribute('data-credit'));
+                sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
+                sendToServer(rsp);
+            }
+        });
+    }
+
+    // 크레딧 옵션 클릭 처리
+    document.querySelectorAll('.credit-option').forEach(option => {
+        option.addEventListener('click', function() {
+            // 선택 표시 처리
+            document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedOption = this;
+        });
+    });
+</script>
+</body>
+</html>

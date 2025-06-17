@@ -47,3 +47,4 @@ src/main/java/com/hwang/Studies/Jami_API.java
 .csr
 .key
 server.key
+.vercel
