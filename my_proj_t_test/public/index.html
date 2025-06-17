@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>사용자 인증</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 50px 20px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background-color: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #2e3e5c;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #6b7c93;
+            margin-bottom: 30px;
+        }
+
+        .error-alert {
+            background-color: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e53e3e;
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        .error-message {
+            color: #e53e3e;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #357ABD;
+        }
+
+        button:disabled {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .validation-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .valid-icon {
+            color: #38a169;
+        }
+
+        .invalid-icon {
+            color: #e53e3e;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo">
+        <svg viewBox="0 0 24 24" fill="#4a90e2">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+        </svg>
+    </div>
+    <h1>사용자 인증</h1>
+    <p id="main-message">사용자 ID를 입력하여 계속하세요.</p>
+    
+    <!-- 오류 알림 영역 -->
+    <div class="error-alert" id="error-alert">
+        <strong>오류:</strong> <span id="error-alert-message"></span>
+    </div>
+    
+    <form id="user-form">
+        <div class="form-group">
+            <label for="user-id">사용자 ID (UID)</label>
+            <div class="input-wrapper">
+                <input
+                        type="text"
+                        id="user-id"
+                        name="userId"
+                        placeholder="사용자 ID를 입력하세요"
+                        autocomplete="off"
+                        required
+                >
+                <span class="validation-icon valid-icon">✓</span>
+                <span class="validation-icon invalid-icon">✗</span>
+            </div>
+            <div class="error-message" id="error-message">유효하지 않은 사용자 ID입니다.</div>
+        </div>
+
+        <button type="submit" id="submit-button">
+            <span id="button-text">계속하기</span>
+            <div class="loader" id="loader"></div>
+        </button>
+    </form>
+</div>
+<script>
+    // !!!!! 전체적으로 수정필요. 인덱스는 유저 히스 유아이디로 하게만들고 크레딧샵은 uid로 해버려서
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('user-form');
+        const userIdInput = document.getElementById('user-id');
+        const errorMessage = document.getElementById('error-message');
+        const submitButton = document.getElementById('submit-button');
+        const buttonText = document.getElementById('button-text');
+        const loader = document.getElementById('loader');
+        const validIcon = document.querySelector('.valid-icon');
+        const invalidIcon = document.querySelector('.invalid-icon');
+        const errorAlert = document.getElementById('error-alert');
+        const errorAlertMessage = document.getElementById('error-alert-message');
+        const mainMessage = document.getElementById('main-message');
+
+        // Firebase Firestore 초기화
+        const db = firebase.firestore();
+        const usersCollection = db.collection('user_Datas');
+
+        // 실시간 유효성 검사
+        userIdInput.addEventListener('input', function() {
+            const userId = userIdInput.value.trim();
+
+            // 오류 알림 숨기기
+            errorAlert.style.display = 'none';
+
+            if (userId === '') {
+                // 입력이 비어있으면 아이콘 숨기기
+                validIcon.style.display = 'none';
+                invalidIcon.style.display = 'none';
+                errorMessage.style.display = 'none';
+                submitButton.disabled = true;
+            } else {
+                submitButton.disabled = false;
+            }
+        });
+
+        // 폼 제출 처리
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const userId = userIdInput.value.trim();
+
+            if (userId === '') {
+                errorMessage.textContent = '사용자 UID가 없다.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // 로딩 표시
+            buttonText.style.display = 'none';
+            loader.style.display = 'block';
+            submitButton.disabled = true;
+            errorAlert.style.display = 'none';
+
+            try {
+                // Firebase에서 사용자 ID 확인
+                // const userDoc = await usersCollection.doc(userId).get();
+                const querySnapshot = await usersCollection
+                    .where("uid", "==", userId)
+                    .get();
+
+                if (!querySnapshot.empty) {
+                    // 사용자 ID가 존재하는 경우
+                    console.log('Firebase에서 사용자 ID 확인 완료:', userId);
+                    sessionStorage.setItem('uid', userId);
+                    window.location.href = '/save-uid?uid=' + userId;
+                } else {
+                    // 존재하지 않는 사용자 ID
+                    console.log('존재하지 않는 사용자 ID:', userId);
+                    
+                    errorAlert.style.display = 'block';
+                    errorAlertMessage.textContent = `사용자 ID "${userId}"가 Firebase에 등록되지 않았습니다.`;
+                    
+                    // 로딩 상태 해제
+                    buttonText.style.display = 'block';
+                    loader.style.display = 'none';
+                    submitButton.disabled = false;
+
+                    validIcon.style.display = 'none';
+                    invalidIcon.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Firebase 사용자 확인 오류:', error);
+                
+                errorAlert.style.display = 'block';
+                errorAlertMessage.textContent = '사용자 확인 중 오류가 발생했습니다. 다시 시도해주세요.';
+
+                // 로딩 상태 해제
+                buttonText.style.display = 'block';
+                loader.style.display = 'none';
+                submitButton.disabled = false;
+            }
+        });
+
+        // 페이지 로드 시 입력 필드 초기화 (URL 파라미터에서 가져온 경우 제외)
+        if (userIdInput.value) {
+            // 입력값이 있으면 유효성 검사 실행
+            userIdInput.dispatchEvent(new Event('input'));
+        } else submitButton.disabled = true;
+    });
+</script>
+</body>
+</html>
