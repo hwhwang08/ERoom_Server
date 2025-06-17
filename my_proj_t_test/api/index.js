@@ -5,4 +5,7 @@ app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.listen(7999, () => console.log("서버 준비 완료~ 7999."));
 
-module.exports = app;
+// api/index.js
+module.exports = (req, res) => {
+    res.send("Express on Vercel");
+};
