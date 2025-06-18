@@ -92,6 +92,7 @@ function parseCookies(req) {
     return list;
 }
 
+
 const server = https.createServer(httpsOptions, async (req, res) => {
     const urlObj = new URL(req.url, `https://${req.headers.host}`);
     const pathname = urlObj.pathname;
@@ -267,26 +268,10 @@ const server = https.createServer(httpsOptions, async (req, res) => {
         }
     } else {
         console.log("❌ Env var missing! Falling back to local file (should not happen on Vercel)");
+        // 로컬
         serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
     }
 
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-    });
-
-    // const admin = require('firebase-admin');
-    //
-    // let serviceAccount;
-    //
-    // if (process.env.Eroom_e6659_firebase) {
-    //     serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
-    // }
-    //     // 로컬
-    //     // serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
-    //
-    // admin.initializeApp({
-    //     credential: admin.credential.cert(serviceAccount),
-    // });
 
 
     if (pathname === '/') {

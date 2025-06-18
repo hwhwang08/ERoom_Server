@@ -1,14 +1,21 @@
 {
-  "builds": [
-    {
-      "src": "src/main/docs/server.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 30
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "src/main/docs/server.js"
+      "source": "/",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/login",
+      "destination": "/public/login.html"
+    },
+    {
+      "source": "/firebase-config.js",
+      "destination": "/api/firebase-config"
     }
   ]
 }
