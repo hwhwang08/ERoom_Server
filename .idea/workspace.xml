@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="306d25a2-a304-45c4-b7e1-d83d7da25676" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/payment-complete.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/payment-complete.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/save-uid.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/save-uid.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/success.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/success.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/verify-token.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/verify-token.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/verify-user-and-payment.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/verify-user-and-payment.js" afterDir="false" />
-    </list>
+    <list default="true" id="306d25a2-a304-45c4-b7e1-d83d7da25676" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -91,7 +83,7 @@
       <workItem from="1750162105530" duration="2000" />
       <workItem from="1750205402140" duration="477000" />
       <workItem from="1750207717237" duration="9845000" />
-      <workItem from="1750224049831" duration="15145000" />
+      <workItem from="1750224049831" duration="15576000" />
     </task>
     <servers />
   </component>
