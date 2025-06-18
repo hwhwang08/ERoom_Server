@@ -1,3 +1,4 @@
+console.log("ENV DETECTED:", process.env.Eroom_e6659_firebase ? "✅ YES" : "❌ NO");
 const cors = require('cors');
 const path = require('path');
 const admin = require('firebase-admin');
@@ -241,20 +242,35 @@ const server = https.createServer(httpsOptions, async (req, res) => {
         //     res.end(data);
         // });
     }
-
     const admin = require('firebase-admin');
 
     let serviceAccount;
 
     if (process.env.Eroom_e6659_firebase) {
+        console.log("✅ Using env var for Firebase");
         serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
+    } else {
+        console.log("❌ Env var missing! Falling back to local file (should not happen on Vercel)");
+        serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
     }
-        // 로컬
-        // serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
 
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
     });
+
+    // const admin = require('firebase-admin');
+    //
+    // let serviceAccount;
+    //
+    // if (process.env.Eroom_e6659_firebase) {
+    //     serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
+    // }
+    //     // 로컬
+    //     // serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
+    //
+    // admin.initializeApp({
+    //     credential: admin.credential.cert(serviceAccount),
+    // });
 
 
     if (pathname === '/') {
