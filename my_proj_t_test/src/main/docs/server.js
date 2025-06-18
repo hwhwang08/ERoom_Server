@@ -246,8 +246,8 @@ const server = https.createServer(httpsOptions, async (req, res) => {
 
     let serviceAccount;
 
-    if (process.env["eroom-e6659-firebase"]) {
-        serviceAccount = JSON.parse(process.env["eroom-e6659-firebase"]);
+    if (process.env.Eroom_e6659_firebase) {
+        serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
     }
         // 로컬
         // serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
