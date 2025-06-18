@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 async function getToken() {
     const response = await axios.post('https://api.iamport.kr/users/getToken', {

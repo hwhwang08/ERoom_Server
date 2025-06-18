@@ -1,6 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-const querystring = require('querystring');
+import fs from 'fs';
+import path from 'path';
+import querystring from 'querystring';
+
 
 function parseCookies(req) {
     const list = {};
