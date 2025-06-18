@@ -1,6 +1,7 @@
-const admin = require('firebase-admin');
-const path = require('path');
-const fs = require('fs');
+import admin from 'firebase-admin';
+import path from 'path';
+import fs from 'fs';
+
 
 // Firebase 초기화
 if (!admin.apps.length) {
