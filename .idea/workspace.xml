@@ -6,13 +6,19 @@
   <component name="ChangeListManager">
     <list default="true" id="306d25a2-a304-45c4-b7e1-d83d7da25676" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/server.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JavaScript File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -74,7 +80,7 @@
       <workItem from="1750162105530" duration="2000" />
       <workItem from="1750205402140" duration="477000" />
       <workItem from="1750207717237" duration="9845000" />
-      <workItem from="1750224049831" duration="2532000" />
+      <workItem from="1750224049831" duration="6160000" />
     </task>
     <servers />
   </component>

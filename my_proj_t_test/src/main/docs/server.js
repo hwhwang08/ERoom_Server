@@ -242,6 +242,21 @@ const server = https.createServer(httpsOptions, async (req, res) => {
         // });
     }
 
+    const admin = require('firebase-admin');
+
+    let serviceAccount;
+
+    if (process.env["eroom-e6659-firebase"]) {
+        serviceAccount = JSON.parse(process.env["eroom-e6659-firebase"]);
+    }
+        // 로컬
+        // serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
+
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+
+
     if (pathname === '/') {
         if (!uid) {
             // 로그인 페이지 띄우기
