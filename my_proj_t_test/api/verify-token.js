@@ -1,7 +1,11 @@
-import admin from 'firebase-admin';
+const admin = require('firebase-admin');
 
 // Firebase 초기화
 if (!admin.apps.length) {
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT || !process.env.FIREBASE_DATABASE_URL) {
+        throw new Error('Firebase 환경변수가 설정되지 않았습니다.');
+    }
+
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
@@ -25,7 +29,7 @@ async function checkUserExists(uid) {
     }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -62,9 +66,10 @@ export default async function handler(req, res) {
             redirectUrl: `${baseUrl}/api/save-uid?uid=${uid}`
         });
     } catch (err) {
+        console.error('토큰 검증 오류:', err);
         res.status(401).json({
             success: false,
-            message: '유효하지 않은 토큰임.'
+            message: '유효하지 않은 토큰입니다.'
         });
     }
-}
+};

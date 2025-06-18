@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import querystring from 'querystring';
 
+const fs = require('fs');
+const path = require('path');
+const querystring = require('querystring');
 
 function parseCookies(req) {
     const list = {};
@@ -13,7 +13,7 @@ function parseCookies(req) {
     return list;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method not allowed' });
     }
@@ -46,4 +46,4 @@ export default async function handler(req, res) {
         res.setHeader('Content-Type', 'text/html');
         res.send(modifiedHtml);
     });
-}
+};

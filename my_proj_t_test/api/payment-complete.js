@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = require('axios');
 
 async function getToken() {
     const response = await axios.post('https://api.iamport.kr/users/getToken', {
@@ -24,7 +24,7 @@ async function verifyPayment(imp_uid) {
     }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ success: false, message: 'Method not allowed' });
     }
@@ -46,4 +46,4 @@ export default async function handler(req, res) {
         console.error('결제 검증 오류:', err);
         res.status(500).json({ success: false, message: '서버 오류 발생' });
     }
-}
+};

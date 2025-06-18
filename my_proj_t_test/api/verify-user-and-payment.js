@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -29,7 +29,6 @@ export default async function handler(req, res) {
         });
     }
 
-    // Query parameters에서 결제 데이터 추출
     const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.query;
 
     res.status(200).json({
@@ -39,4 +38,4 @@ export default async function handler(req, res) {
         message: '사용자 검증 및 결제 데이터 처리 완료',
         paymentData: { orderId, amount, orderName, method, paymentKey, creditAmount }
     });
-}
+};
