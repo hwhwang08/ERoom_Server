@@ -22,6 +22,14 @@ const httpsOptions = {
 // 수정된 코드
 const serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
 
+const serviceAccount = {
+        type: "service_account",
+        project_id: process.env.FIREBASE_PROJECT_ID || "eroom-e6659",
+        private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        client_email: process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk-fbsvc@eroom-e6659.iam.gserviceaccount.com",
+        // 나머지 필드들...
+    }
+
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -244,7 +252,6 @@ const server = https.createServer(httpsOptions, async (req, res) => {
         //     res.end(data);
         // });
     }
-    const admin = require('firebase-admin');
 
     let serviceAccount;
 
