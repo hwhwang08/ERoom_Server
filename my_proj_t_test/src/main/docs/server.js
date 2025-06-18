@@ -18,7 +18,9 @@ const httpsOptions = {
     cert: fs.readFileSync(path.resolve(__dirname, '../../../mylocal.dev+4.pem')),
 };
 
-const serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
+// const serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
+// 수정된 코드
+const serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
