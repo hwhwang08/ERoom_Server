@@ -248,9 +248,14 @@ const server = https.createServer(httpsOptions, async (req, res) => {
 
     if (process.env.Eroom_e6659_firebase) {
         console.log("✅ Using env var for Firebase");
-        serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
-        // 줄바꿈 처리
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        console.log("✅ ENV string preview:", process.env.Eroom_e6659_firebase.slice(0, 100));
+        try {
+            serviceAccount = JSON.parse(process.env.Eroom_e6659_firebase);
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        } catch (e) {
+            console.error("❌ Failed to parse Firebase ENV JSON:", e.message);
+            throw new Error("Firebase ENV parsing error");
+        }
     } else {
         console.log("❌ Env var missing! Falling back to local file (should not happen on Vercel)");
         serviceAccount = require('../resources/eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
