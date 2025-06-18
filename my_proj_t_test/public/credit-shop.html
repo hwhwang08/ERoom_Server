@@ -247,7 +247,8 @@
 
         // GET 방식으로 Query Parameter 생성
         const queryParams = new URLSearchParams(paymentData);
-        const url = `https://localhost:7999/verify-user-and-payment?${queryParams.toString()}`;
+        const url = `/api/verify-user-and-payment?${queryParams.toString()}`;
+
 
         $.ajax({
             url: url,

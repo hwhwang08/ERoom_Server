@@ -39,13 +39,12 @@ build/
 
 .env
 
-src/main/docs/public/firebase-config.js
+api/firebase-config.js
 src/main/resources/*.json
 *key.pem
-src/main/java/com/hwang/Studies/Jami_API.java
+src/main/java/com/hwang/Studies/*.java
 .crt
 .csr
 .key
 server.key
 .vercel
-

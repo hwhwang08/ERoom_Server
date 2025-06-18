@@ -4,7 +4,26 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="306d25a2-a304-45c4-b7e1-d83d7da25676" name="Changes" comment="" />
+    <list default="true" id="306d25a2-a304-45c4-b7e1-d83d7da25676" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/index.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/payment-complete.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/purchase.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/save-uid.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/success.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/verify-token.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/verify-user-and-payment.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/public/credit-shop.html" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/public/credit-shop.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/public/docs.html" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/public/docs.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/public/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/public/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/public/success.html" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/public/success.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/public/test_login.html" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/public/test_login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/src/main/docs/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/my_proj_t_test/vercel.json" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/vercel.json" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -58,6 +77,12 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\201-12\Documents\GitHub\ERoom_Server\my_proj_t_test" />
+      <recent name="C:\Users\201-12\Documents\GitHub\ERoom_Server\my_proj_t_test\api" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -77,7 +102,7 @@
       <workItem from="1750162105530" duration="2000" />
       <workItem from="1750205402140" duration="477000" />
       <workItem from="1750207717237" duration="9845000" />
-      <workItem from="1750224049831" duration="9913000" />
+      <workItem from="1750224049831" duration="14651000" />
     </task>
     <servers />
   </component>
