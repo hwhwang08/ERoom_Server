@@ -10,7 +10,10 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const PORT_HTTPS = 7999;
 
 const httpsOptions = {
-    key: fs.readFileSync(path.resolve(__dirname, '../../../mylocal.dev+4-key.pem')),
+    // 버셀용
+    key: process.env.Local_KEY.replace(/\\n/g, '\n'),
+    // 기본용
+    // key: fs.readFileSync(path.resolve(__dirname, '../../../mylocal.dev+4-key.pem')),
     cert: fs.readFileSync(path.resolve(__dirname, '../../../mylocal.dev+4.pem')),
 };
 
@@ -220,12 +223,23 @@ const server = https.createServer(httpsOptions, async (req, res) => {
 
     const staticPath = path.join(__dirname, 'public', pathname);
     if (pathname === '/firebase-config.js') {
-        const filePath = path.join(__dirname, 'public', 'firebase-config.js');
-        return fs.readFile(filePath, (err, data) => {
-            if (err) return res.writeHead(404).end('Not Found');
-            res.writeHead(200, { 'Content-Type': 'application/javascript' });
-            res.end(data);
-        });
+        // 바셀
+        const firebaseConfigJSON = process.env.FIREBASE_CONFIG;
+        if (!firebaseConfigJSON) {
+            res.writeHead(404).end('Not Found');
+            return;
+        }
+        const jsContent = `window.firebaseConfig = ${firebaseConfigJSON};`;
+        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+        res.end(jsContent);
+
+        // 로컬용
+        // const filePath = path.join(__dirname, 'public', 'firebase-config.js');
+        // return fs.readFile(filePath, (err, data) => {
+        //     if (err) return res.writeHead(404).end('Not Found');
+        //     res.writeHead(200, { 'Content-Type': 'application/javascript' });
+        //     res.end(data);
+        // });
     }
 
     if (pathname === '/') {
