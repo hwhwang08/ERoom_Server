@@ -1,7 +1,11 @@
-import admin from 'firebase-admin';
+const admin = require('firebase-admin');
 
 // Firebase 초기화
 if (!admin.apps.length) {
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT || !process.env.FIREBASE_DATABASE_URL) {
+        throw new Error('Firebase 환경변수가 설정되지 않았습니다.');
+    }
+
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
@@ -25,7 +29,7 @@ async function checkUserExists(uid) {
     }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ success: false, message: 'Method not allowed' });
     }
@@ -39,7 +43,6 @@ export default async function handler(req, res) {
     const result = await checkUserExists(uid);
 
     if (result.userExists) {
-        // 쿠키 설정 후 메인 페이지로 리다이렉트
         res.setHeader('Set-Cookie', `uid=${uid}; Path=/; HttpOnly; SameSite=Lax`);
         res.redirect(302, '/');
     } else {
@@ -48,4 +51,4 @@ export default async function handler(req, res) {
             message: '해당 UID의 유저를 찾을 수 없습니다.'
         });
     }
-}
+};

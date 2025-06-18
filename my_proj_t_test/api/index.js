@@ -1,10 +1,14 @@
-import admin from 'firebase-admin';
-import path from 'path';
-import fs from 'fs';
 
+const admin = require('firebase-admin');
+const path = require('path');
+const fs = require('fs');
 
 // Firebase 초기화
 if (!admin.apps.length) {
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT || !process.env.FIREBASE_DATABASE_URL) {
+        throw new Error('Firebase 환경변수가 설정되지 않았습니다.');
+    }
+
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
@@ -38,7 +42,7 @@ async function checkUserExists(uid) {
     }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // CORS 설정
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -52,11 +56,9 @@ export default async function handler(req, res) {
     const uid = cookies.uid;
 
     if (!uid) {
-        // 로그인 페이지로 리다이렉트
         return res.redirect('/login');
     }
 
-    // 사용자 존재 확인
     const result = await checkUserExists(uid);
     if (!result.userExists) {
         return res.redirect('/login');
@@ -64,11 +66,9 @@ export default async function handler(req, res) {
 
     const nickname = result.userdata[0]?.nickname || 'unknown';
 
-    // credit-shop.html 파일 읽기 및 수정
     const htmlPath = path.join(process.cwd(), 'public', 'credit-shop.html');
     let html = fs.readFileSync(htmlPath, 'utf8');
 
-    // 닉네임과 uid를 HTML에 삽입
     html = html.replace(
         '</body>',
         `<script>
@@ -83,4 +83,4 @@ export default async function handler(req, res) {
 
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
-}
+};
