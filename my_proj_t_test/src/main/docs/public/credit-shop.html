@@ -243,6 +243,7 @@
 
         // 사용자 ID 가져오기
         const userId = encodeURIComponent(document.getElementById('user-id').textContent);
+        console.log("이기 뭔데 ", userId);
 
         // GET 방식으로 Query Parameter 생성
         const queryParams = new URLSearchParams(paymentData);
