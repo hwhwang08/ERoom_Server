@@ -35,24 +35,34 @@ let firebaseInitialized = false;
 
 try {
     admin = require('firebase-admin');
-    
+
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        
-        if (!admin.apps.length) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
-            });
-            firebaseInitialized = true;
-            console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
+        console.log('📝 환경변수 길이:', process.env.FIREBASE_SERVICE_ACCOUNT.length);
+
+        try {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            console.log('✅ JSON 파싱 성공');
+            console.log('🔍 프로젝트 ID:', serviceAccount.project_id);
+
+            if (!admin.apps.length) {
+                admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount),
+                    databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
+                });
+                firebaseInitialized = true;
+                console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
+            }
+        } catch (jsonError) {
+            console.error('❌ JSON 파싱 실패:', jsonError.message);
+            console.log('📄 환경변수 앞부분 미리보기:', process.env.FIREBASE_SERVICE_ACCOUNT.substring(0, 100));
         }
     } else {
+        console.log('⚠️ FIREBASE_SERVICE_ACCOUNT 환경변수 없음');
         // 로컬 개발환경용 - JSON 파일 사용
         try {
             const serviceAccount = require('../eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
-            
+
             if (!admin.apps.length) {
                 admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount),
@@ -67,8 +77,10 @@ try {
     }
 } catch (error) {
     console.error('❌ Firebase 초기화 오류:', error.message);
+    console.error('🔍 상세 오류:', error.stack);
     console.log('💡 Firebase 기능은 비활성화됩니다.');
 }
+
 
 // 임시 데이터 저장소 (메모리) - 맨 위로 이동
 const tempDataStore = new Map();
@@ -285,8 +297,11 @@ app.get('/health', (req, res) => {
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
+        // 파베 초기화 여부
         firebase: firebaseInitialized ? 'initialized' : 'disabled',
+        // 환경변수 인식
         firebaseEnvExists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+        // 아임포트 여부
         iamport: !!IMP_API_KEY,
         version: '2.1.0-debug',
         tempDataCount: tempDataStore.size
