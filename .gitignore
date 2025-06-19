@@ -37,15 +37,28 @@ build/
 ### Mac OS ###
 .DS_Store
 
+# 환경 변수와 보안 파일들
 .env
-
-api/firebase-config.js
-src/main/resources/*.json
-*key.pem
+.env.local
+.env.production
 src/main/java/com/hwang/Studies/*.java
-.crt
-.csr
-.key
+
+# Firebase 관련
+public/firebase-config.js
+src/main/resources/*.json
+resources/*.json
+
+# SSL 인증서 (로컬 개발용)
+*key.pem
+*.pem
+*.crt
+*.csr
+*.key
 server.key
+
+# Vercel
 .vercel
 
+# Node.js
+node_modules/
+.vercel
