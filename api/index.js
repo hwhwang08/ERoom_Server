@@ -82,14 +82,8 @@ function generateTempToken() {
 // 임시 사용자 확인 함수 (Firebase 없이)
 async function checkUserExists(uid) {
     if (!firebaseInitialized) {
-        console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
-        return {
-            userExists: true,
-            userdata: [{
-                nickname: `TestUser_${uid.substring(0, 6)}`,
-                uid: uid
-            }]
-        };
+        console.error('❌ Firebase가 초기화되지 않았습니다.');
+        return { userExists: false, userdata: [] };
     }
 
     try {
@@ -305,16 +299,10 @@ app.get('/verify-token', async (req, res) => {
     }
 
     if (!firebaseInitialized) {
-        const testUid = 'test_' + Date.now();
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        const host = req.headers['x-forwarded-host'] || req.get('host');
-        const baseUrl = `${protocol}://${host}`;
-
-        return res.json({
-            success: true,
-            uid: testUid,
-            message: '토큰 검증 성공 (테스트 모드)',
-            redirectUrl: `${baseUrl}/save-uid?uid=${testUid}`
+        console.error('❌ Firebase가 초기화되지 않았습니다.');
+        return res.status(500).json({
+            success: false,
+            message: 'Firebase 연결 오류 - 관리자에게 문의하세요.'
         });
     }
 
@@ -323,6 +311,13 @@ app.get('/verify-token', async (req, res) => {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         const uid = decodedToken.uid;
         const result = await checkUserExists(uid);
+
+        if (!result.userExists) {
+            return res.status(404).json({
+                success: false,
+                message: '등록되지 않은 사용자입니다.'
+            });
+        }
 
         const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
         const host = req.headers['x-forwarded-host'] || req.get('host');
@@ -440,14 +435,15 @@ app.get('/login', (req, res) => {
 app.get('/', async (req, res) => {
     const uid = req.cookies?.uid;
 
-    if (!uid) {
+    if (!uid) return res.sendFile(path.join(__dirname, '../public/login.html'));
+
+    if (!firebaseInitialized) {
+        console.error('❌ Firebase가 초기화되지 않았습니다.');
         return res.sendFile(path.join(__dirname, '../public/login.html'));
     }
 
     const result = await checkUserExists(uid);
-    if (!result.userExists) {
-        return res.sendFile(path.join(__dirname, '../public/login.html'));
-    }
+    if (!result.userExists) return res.sendFile(path.join(__dirname, '../public/login.html'));
 
     const nickname = result.userdata[0]?.nickname || 'unknown';
 
@@ -474,6 +470,7 @@ app.get('/', async (req, res) => {
 
         res.send(modifiedHtml);
     });
+
 });
 
 app.get('/success', (req, res) => {
