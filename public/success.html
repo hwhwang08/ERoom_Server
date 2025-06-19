@@ -188,18 +188,69 @@
     });
 
     function displayPaymentInfo(paymentInfo) {
+        console.log('🖼️ displayPaymentInfo 호출됨');
+        console.log('📋 받은 데이터:', paymentInfo);
+
+        // 각 필드별로 상세 로그
+        console.log('userId:', paymentInfo.userId);
+        console.log('orderId:', paymentInfo.orderId);
+        console.log('orderName:', paymentInfo.orderName);
+        console.log('amount:', paymentInfo.amount);
+        console.log('method:', paymentInfo.method);
+        console.log('creditAmount:', paymentInfo.creditAmount);
+
+        // DOM 요소 확인
+        const userIdEl = document.getElementById('userId');
+        const orderIdEl = document.getElementById('orderId');
+        const orderNameEl = document.getElementById('orderName');
+        const amountEl = document.getElementById('amount');
+        const methodEl = document.getElementById('method');
+        const creditAmountEl = document.getElementById('creditAmount');
+
+        console.log('DOM 요소들:', { userIdEl, orderIdEl, orderNameEl, amountEl, methodEl, creditAmountEl });
+
         // 각 필드에 데이터 표시
-        document.getElementById('userId').textContent = paymentInfo.userId || '-';
-        document.getElementById('orderId').textContent = paymentInfo.orderId || '-';
-        document.getElementById('orderName').textContent = paymentInfo.orderName || '-';
-        document.getElementById('amount').textContent = paymentInfo.amount ? 
-            `${Number(paymentInfo.amount).toLocaleString()}원` : '-';
-        document.getElementById('method').textContent = paymentInfo.method || '-';
-        document.getElementById('creditAmount').textContent = paymentInfo.creditAmount ? 
-            `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : '-';
-        
+        if (userIdEl) {
+            userIdEl.textContent = paymentInfo.userId || 'N/A';
+            console.log('✅ userId 설정됨:', userIdEl.textContent);
+        }
+
+        if (orderIdEl) {
+            orderIdEl.textContent = paymentInfo.orderId || 'N/A';
+            console.log('✅ orderId 설정됨:', orderIdEl.textContent);
+        }
+
+        if (orderNameEl) {
+            orderNameEl.textContent = paymentInfo.orderName || 'N/A';
+            console.log('✅ orderName 설정됨:', orderNameEl.textContent);
+        }
+
+        if (amountEl) {
+            const formattedAmount = paymentInfo.amount ?
+                `${Number(paymentInfo.amount).toLocaleString()}원` : 'N/A';
+            amountEl.textContent = formattedAmount;
+            console.log('✅ amount 설정됨:', amountEl.textContent);
+        }
+
+        if (methodEl) {
+            methodEl.textContent = paymentInfo.method || 'N/A';
+            console.log('✅ method 설정됨:', methodEl.textContent);
+        }
+
+        if (creditAmountEl) {
+            const formattedCredit = paymentInfo.creditAmount ?
+                `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : 'N/A';
+            creditAmountEl.textContent = formattedCredit;
+            console.log('✅ creditAmount 설정됨:', creditAmountEl.textContent);
+        }
+
         // 결제 정보 표시
-        document.getElementById('paymentDetails').style.display = 'block';
+        const paymentDetails = document.getElementById('paymentDetails');
+        if (paymentDetails) {
+            paymentDetails.style.display = 'block';
+            console.log('✅ paymentDetails 표시됨');
+        }
+
     }
 
     function showError() {
