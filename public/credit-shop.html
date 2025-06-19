@@ -195,25 +195,76 @@
 
     async function initializeFirebase() {
         try {
+            console.log('🔥 Firebase 초기화 시작...');
+
             const response = await fetch('/firebase-config');
+
+            // 응답 상태 확인
+            if (!response.ok) {
+                console.warn(`⚠️ Firebase config 응답 오류: ${response.status}`);
+                // 에러 상황에서도 계속 진행 (테스트 모드)
+                console.log('📝 Firebase 비활성화 - 테스트 모드로 진행');
+                return;
+            }
+
+            // Content-Type 확인
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.warn('⚠️ Firebase config가 JSON이 아님:', contentType);
+                console.log('📝 Firebase 비활성화 - 테스트 모드로 진행');
+                return;
+            }
+
             const firebaseConfig = await response.json();
 
-            // console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
+            // 유효한 설정인지 확인
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'dummy-api-key') {
+                console.warn('⚠️ Firebase 설정이 더미 값입니다.');
+                console.log('📝 Firebase 비활성화 - 테스트 모드로 진행');
+                return;
+            }
 
-            // databaseURL만 있어도 Firestore 연결 시도
-            // if (typeof firebase !== 'undefined' && firebaseConfig.databaseURL) {
-
-            if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
+            // Firebase 초기화
+            if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 firebaseInitialized = true;
                 console.log('✅ Firebase 클라이언트 초기화 성공');
             } else {
-                console.warn('⚠️ Firebase 설정을 가져올 수 없음');
+                console.warn('⚠️ Firebase SDK를 찾을 수 없음');
             }
+
         } catch (error) {
             console.error('❌ Firebase 초기화 오류:', error);
+            console.log('📝 Firebase 비활성화 - 테스트 모드로 계속 진행');
+
+            // Firebase 없이도 계속 진행
+            firebaseInitialized = false;
+            currentUserName = '테스트 사용자';
+            currentUserEmail = 'test@example.com';
         }
+
+
+        // try {
+        //     const response = await fetch('/firebase-config');
+        //     const firebaseConfig = await response.json();
+        //
+        //     // console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
+        //
+        //     // databaseURL만 있어도 Firestore 연결 시도
+        //     // if (typeof firebase !== 'undefined' && firebaseConfig.databaseURL) {
+        //
+        //     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
+        //         firebase.initializeApp(firebaseConfig);
+        //         db = firebase.firestore();
+        //         firebaseInitialized = true;
+        //         console.log('✅ Firebase 클라이언트 초기화 성공');
+        //     } else {
+        //         console.warn('⚠️ Firebase 설정을 가져올 수 없음');
+        //     }
+        // } catch (error) {
+        //     console.error('❌ Firebase 초기화 오류:', error);
+        // }
     }
 
     // 아임포트 객체 초기화 (중복 선언 X)
