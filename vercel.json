@@ -1,3 +1,4 @@
+
 {
   "version": 2,
   "routes": [
@@ -46,8 +47,20 @@
       "dest": "/api/index.js"
     },
     {
-      "src": "/(.*)",
+      "src": "/health",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
       "dest": "/public/$1"
+    },
+    {
+      "src": "/(.*)\\.(html)$",
+      "dest": "/public/$1.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
     }
   ],
   "functions": {
