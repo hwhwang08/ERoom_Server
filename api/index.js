@@ -331,7 +331,7 @@ app.get('/verify-token', async (req, res) => {
             success: true,
             uid,
             message: '토큰 검증 성공했습니다!!',
-            redirectUrl: `${baseUrl}/save-uid?uid=${uid}`
+            redirectUrl: `${baseUrl}/save-uid?uid=${uid}&amount=100`
         });
     } catch (err) {
         console.error('토큰 검증 오류:', err);
@@ -406,6 +406,7 @@ app.get('/payment-complete', async (req, res) => {
 
 app.get('/save-uid', async (req, res) => {
     const uidParam = req.query.uid;
+    const creditAmount = req.query.amount; // 유니티 결제용: amount 파라미터
 
     if (!uidParam) {
         return res.status(400).send('UID가 필요합니다.');
@@ -420,10 +421,22 @@ app.get('/save-uid', async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
         });
-        res.redirect('/');
+
+        // amount 파라미터가 있으면 결제 페이지로, 없으면 일반 상점으로
+        if (creditAmount) {
+            console.log(`🎯 유니티에서 ${creditAmount} 크레딧 결제 요청`);
+            res.redirect(`/?amount=${creditAmount}`);
+        } else {
+            res.redirect('/');
+        }
     } else {
         res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
     }
+
+    // res.redirect('/');
+    // } else {
+    //     res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
+    // }
 });
 
 app.get('/login', (req, res) => {
@@ -438,6 +451,7 @@ app.get('/login', (req, res) => {
 
 app.get('/', async (req, res) => {
     const uid = req.cookies?.uid;
+    const requestedAmount = req.query.amount; // URL 파라미터에서 amount 가져오기
 
     if (!uid) {
         return res.sendFile(path.join(__dirname, '../public/login.html'));
@@ -464,10 +478,21 @@ app.get('/', async (req, res) => {
             `<script>
                 const nickname = '${nickname.replace(/'/g, "\\'")}';
                 const uid = '${uid.replace(/'/g, "\\'")}';
+                const requestedAmount = '${requestedAmount || ''}'; // 요청된 크레딧 양
+
                 sessionStorage.setItem('userId', nickname);
                 sessionStorage.setItem('userUid', uid);
+                sessionStorage.setItem('requestedAmount', requestedAmount);
+
                 const userIdElement = document.getElementById('user-id');
                 if (userIdElement) userIdElement.textContent = nickname;
+                
+                // 🎯 유니티에서 요청한 크레딧이 있으면 자동 결제 실행
+                if (requestedAmount && requestedAmount !== '') {
+                    console.log('🎮 유니티에서 요청한 크레딧:', requestedAmount);
+                    // DOM 로드 후 자동 결제 실행
+                    setTimeout(autoPayment, 1000);
+                }
             </script></body>`
         );
 
