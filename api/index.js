@@ -472,7 +472,7 @@ app.get('/save-uid', async (req, res) => {
         });
         res.redirect('/');
     } else {
-        res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
+        res.status(404).send('UID의 유저를 찾을 수 읍슴');
     }
 });
 
