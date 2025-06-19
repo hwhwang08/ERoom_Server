@@ -1,34 +1,54 @@
 {
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/**/*",
-      "use": "@vercel/static"
-    }
-  ],
+  "version": 2,
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/verify-token",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/verify-user-and-payment",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/purchase",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/payment-complete",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/save-uid",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/success",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/iamport-webhook",
+      "dest": "/api/index.js"
     },
     {
       "src": "/login",
-      "dest": "/api/login"
-    },
-    {
-      "src": "/public/(.*)",
-      "dest": "/public/$1"
+      "dest": "/api/index.js"
     },
     {
       "src": "/",
-      "dest": "/api/index"
+      "dest": "/api/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index"
+      "dest": "/public/$1"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  }
 }
