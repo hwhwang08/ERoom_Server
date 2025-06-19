@@ -32,35 +32,51 @@ console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 // Firebase 초기화 부분 수정
 let admin = null;
 let firebaseInitialized = false;
+let firebaseError = null;
 
 try {
+    console.log('🚀 Firebase Admin SDK 로드 시작...');
     admin = require('firebase-admin');
+    console.log('✅ Firebase Admin SDK 모듈 로드 성공');
 
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        console.log('🔑 Firebase 환경변수 찾음!');
+        console.log('🔑 FIREBASE_SERVICE_ACCOUNT 환경변수 발견');
         console.log('📝 환경변수 길이:', process.env.FIREBASE_SERVICE_ACCOUNT.length);
+        console.log('📄 환경변수 시작 부분:', process.env.FIREBASE_SERVICE_ACCOUNT.substring(0, 50));
 
         try {
             const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
             console.log('✅ JSON 파싱 성공');
-            console.log('🔍 프로젝트 ID:', serviceAccount.project_id);
+            console.log('🔍 파싱된 프로젝트 ID:', serviceAccount.project_id);
+            console.log('🔍 파싱된 클라이언트 이메일:', serviceAccount.client_email);
 
             if (!admin.apps.length) {
+                console.log('🚀 Firebase Admin 앱 초기화 시작...');
+
                 admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount),
                     databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
                 });
+
                 firebaseInitialized = true;
                 console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
+                console.log('🎯 초기화된 앱 개수:', admin.apps.length);
+            } else {
+                console.log('ℹ️ Firebase Admin 앱이 이미 초기화됨');
+                firebaseInitialized = true;
             }
         } catch (jsonError) {
+            firebaseError = `JSON 파싱 실패: ${jsonError.message}`;
             console.error('❌ JSON 파싱 실패:', jsonError.message);
-            console.log('📄 환경변수 앞부분 미리보기:', process.env.FIREBASE_SERVICE_ACCOUNT.substring(0, 100));
+            console.log('📄 문제가 있는 환경변수 미리보기:', process.env.FIREBASE_SERVICE_ACCOUNT.substring(0, 100));
         }
     } else {
-        console.log('⚠️ FIREBASE_SERVICE_ACCOUNT 환경변수 없음');
+        console.log('⚠️ FIREBASE_SERVICE_ACCOUNT 환경변수가 설정되지 않음');
+        firebaseError = 'FIREBASE_SERVICE_ACCOUNT 환경변수 없음';
+
         // 로컬 개발환경용 - JSON 파일 사용
         try {
+            console.log('📁 로컬 Firebase 서비스 계정 파일 검색 중...');
             const serviceAccount = require('../eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
 
             if (!admin.apps.length) {
@@ -73,12 +89,21 @@ try {
             }
         } catch (err) {
             console.warn('⚠️ 로컬 Firebase 서비스 계정 파일을 찾을 수 없습니다:', err.message);
+            firebaseError = `로컬 파일 로드 실패: ${err.message}`;
         }
     }
 } catch (error) {
+    firebaseError = `Firebase 초기화 오류: ${error.message}`;
     console.error('❌ Firebase 초기화 오류:', error.message);
-    console.error('🔍 상세 오류:', error.stack);
+    console.error('🔍 상세 스택:', error.stack);
     console.log('💡 Firebase 기능은 비활성화됩니다.');
+}
+
+// 초기화 결과 로그
+console.log('🏁 Firebase 초기화 완료');
+console.log('🔥 Firebase 상태:', firebaseInitialized ? '활성화' : '비활성화');
+if (firebaseError) {
+    console.log('❌ Firebase 오류:', firebaseError);
 }
 
 
@@ -294,6 +319,15 @@ app.get('/health', (req, res) => {
     console.log('🔍 Firebase 초기화 상태:', firebaseInitialized);
     console.log('🔍 환경변수 존재 여부:', !!process.env.FIREBASE_SERVICE_ACCOUNT);
 
+    // 디버깅 정보 추가
+    const debugInfo = {
+        firebaseEnvLength: process.env.FIREBASE_SERVICE_ACCOUNT ? process.env.FIREBASE_SERVICE_ACCOUNT.length : 0,
+        firebaseEnvPreview: process.env.FIREBASE_SERVICE_ACCOUNT ? process.env.FIREBASE_SERVICE_ACCOUNT.substring(0, 50) + '...' : 'null',
+        adminAppsLength: admin ? admin.apps.length : 'admin is null',
+        nodeEnv: process.env.NODE_ENV,
+        platform: process.platform
+    };
+
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
@@ -304,7 +338,8 @@ app.get('/health', (req, res) => {
         // 아임포트 여부
         iamport: !!IMP_API_KEY,
         version: '2.1.0-debug',
-        tempDataCount: tempDataStore.size
+        tempDataCount: tempDataStore.size,
+        debug: debugInfo
     });
 });
 
