@@ -6,6 +6,10 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/firebase-config",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/verify-token",
       "dest": "/api/index.js"
     },

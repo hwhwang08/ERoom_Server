@@ -11,9 +11,11 @@
     <!--파베라이브러리불러오기-->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
+    <!-- firebase-config.js 제거 -->
     <title>결제창</title>
+    <!-- 기존 스타일 유지 -->
     <style>
+        /* 기존 스타일 그대로 유지 */
         body {
             font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
             background-color: #f8f9fa;
@@ -139,6 +141,7 @@
     </style>
 </head>
 <body>
+<!-- 기존 HTML 구조 그대로 유지 -->
 <div class="container">
     <header>
         <h1>크레딧 상점</h1>
@@ -184,7 +187,30 @@
     </div>
     <button id="purchase-button" class="purchase-button" onclick="requestpay()">구매하기</button>
 </div>
+
 <script>
+    // Firebase 초기화
+    let db = null;
+    let firebaseInitialized = false;
+
+    async function initializeFirebase() {
+        try {
+            const response = await fetch('/firebase-config');
+            const firebaseConfig = await response.json();
+            
+            if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                firebaseInitialized = true;
+                console.log('✅ Firebase 클라이언트 초기화 성공');
+            } else {
+                console.warn('⚠️ Firebase 설정을 가져올 수 없음');
+            }
+        } catch (error) {
+            console.error('❌ Firebase 초기화 오류:', error);
+        }
+    }
+
     // 아임포트 객체 초기화 (중복 선언 X)
     IMP = window.IMP;
     IMP.init("imp55547674");  // 아임포트 고객사 식별코드
@@ -193,7 +219,10 @@
     let currentUserEmail = '';
     let currentUserName = '';
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+        // Firebase 초기화
+        await initializeFirebase();
+
         const uid = sessionStorage.getItem('userUid'); // 서버에서 전달한 UID
         console.log('크샵 유아이디 값:', uid);
 
@@ -202,30 +231,32 @@
             return;
         }
 
-        // Firestore 초기화
-        const db = firebase.firestore();
+        // Firebase가 초기화된 경우에만 사용자 정보 조회
+        if (firebaseInitialized && db) {
+            try {
+                const snapshot = await db.collection('user_Datas')
+                    .where('uid', '==', uid)
+                    .get();
 
-        db.collection('user_Datas')
-            .where('uid', '==', uid)
-            .get()
-            .then(snapshot => {
-                if (snapshot.empty) {
+                if (!snapshot.empty) {
+                    const userData = snapshot.docs[0].data();
+                    currentUserEmail = userData.email || '';
+                    currentUserName = userData.nickname || '사용자';
+
+                    console.log('✅ 사용자 이름:', currentUserName);
+                    console.log('✅ 사용자 이메일:', currentUserEmail);
+                } else {
                     console.log('해당 uid의 사용자 정보 없음');
-                    return;
                 }
-
-                const userData = snapshot.docs[0].data();
-                currentUserEmail = userData.email || '';
-                currentUserName = userData.nickname || '사용자';
-
-                console.log('✅ 사용자 이름:', currentUserName);
-                console.log('✅ 사용자 이메일:', currentUserEmail);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('❌ 사용자 정보 조회 실패:', error);
-            });
+            }
+        } else {
+            console.log('Firebase 비활성화 - 테스트 모드');
+            currentUserName = '테스트 사용자';
+            currentUserEmail = 'test@example.com';
+        }
     });
-
 
     // sendToServer 함수를 전역으로 먼저 정의
     function sendToServer(rsp) {
@@ -247,7 +278,7 @@
 
         // GET 방식으로 Query Parameter 생성
         const queryParams = new URLSearchParams(paymentData);
-        const url = `https://localhost:7999/verify-user-and-payment?${queryParams.toString()}`;
+        const url = `/verify-user-and-payment?${queryParams.toString()}`;
 
         $.ajax({
             url: url,
