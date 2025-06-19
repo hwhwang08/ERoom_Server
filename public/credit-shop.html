@@ -198,7 +198,7 @@
             const response = await fetch('/firebase-config');
             const firebaseConfig = await response.json();
 
-            console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
+            // console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
 
             // databaseURL만 있어도 Firestore 연결 시도
             // if (typeof firebase !== 'undefined' && firebaseConfig.databaseURL) {
