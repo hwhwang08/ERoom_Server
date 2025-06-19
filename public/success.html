@@ -82,6 +82,14 @@
             font-weight: bold;
             color: #1c6fdc;
         }
+
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -90,7 +98,7 @@
     <h1>결제가 성공적으로 완료되었습니다</h1>
     <p>크레딧 구매가 완료되었습니다. 곧 계정에 반영됩니다.</p>
 
-    <div class="payment-details">
+    <div class="payment-details" id="paymentDetails" style="display: none;">
         <div class="detail-row">
             <span class="detail-label">사용자 ID:</span>
             <span id="userId" class="detail-value user-highlight">-</span>
@@ -111,117 +119,126 @@
             <span class="detail-label">결제 수단:</span>
             <span id="method" class="detail-value">-</span>
         </div>
+        <div class="detail-row">
+            <span class="detail-label">구매 크레딧:</span>
+            <span id="creditAmount" class="detail-value">-</span>
+        </div>
     </div>
-    <a id="back-to-shop" class="back-button">크레딧 상점으로 돌아가기</a>
+
+    <div class="error-message" id="errorMessage" style="display: none;">
+        <h3>⚠️ 결제 정보를 불러올 수 없습니다</h3>
+        <p>결제는 정상적으로 완료되었지만, 세부 정보 표시에 문제가 있습니다.</p>
+        <p>문의사항이 있으시면 고객센터로 연락해주세요.</p>
+    </div>
+
+    <a id="back-to-shop" class="back-button" href="/">크레딧 상점으로 돌아가기</a>
 </div>
 
 <script>
-    let paymentData = {};
-
     document.addEventListener('DOMContentLoaded', function() {
-        // URL에서 토큰 추출
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-
-        if (!token) {
-            alert('잘못된 접근입니다.');
-            window.location.href = '/';
-            return;
+        console.log('✅ Success 페이지 로드');
+        
+        try {
+            // sessionStorage에서 결제 정보 가져오기
+            const storedData = sessionStorage.getItem('successPageData');
+            
+            if (!storedData) {
+                console.warn('⚠️ sessionStorage에 결제 정보가 없습니다');
+                showError();
+                return;
+            }
+            
+            const paymentInfo = JSON.parse(storedData);
+            console.log('📊 결제 정보 복원:', paymentInfo);
+            
+            // 타임스탬프 검증 (5분 이내 데이터만 유효)
+            const now = Date.now();
+            const dataAge = now - (paymentInfo.timestamp || 0);
+            const maxAge = 5 * 60 * 1000; // 5분
+            
+            if (dataAge > maxAge) {
+                console.warn('⚠️ 결제 정보가 만료되었습니다');
+                showError();
+                return;
+            }
+            
+            // 결제 정보 표시
+            displayPaymentInfo(paymentInfo);
+            
+            // 사용된 데이터는 보안상 즉시 삭제
+            sessionStorage.removeItem('successPageData');
+            console.log('🗑️ sessionStorage 데이터 삭제 완료');
+            
+            // 구매 정보 서버 전송
+            if (paymentInfo.userId && paymentInfo.amount && paymentInfo.creditAmount) {
+                sendPurchaseInfo(paymentInfo.userId, paymentInfo.creditAmount, paymentInfo.amount)
+                    .then(success => {
+                        if (success) {
+                            console.log('✅ 크레딧 구매 정보 전송 성공');
+                        } else {
+                            console.warn('⚠️ 크레딧 구매 정보 전송 실패');
+                        }
+                    });
+            }
+            
+        } catch (error) {
+            console.error('❌ 결제 정보 처리 오류:', error);
+            showError();
         }
-
-        // 토큰으로 데이터 조회
-        fetch(`/get-payment-data/${token}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 결제 정보 표시
-                    displayPaymentInfo(data.paymentData, data.userId);
-                } else {
-                    alert('결제 정보를 불러올 수 없습니다: ' + data.message);
-                    window.location.href = '/';
-                }
-            })
-            .catch(error => {
-                console.error('❌ 데이터 조회 실패:', error);
-                alert('데이터 조회 실패');
-                window.location.href = '/';
-            });
-
-
-        console.log('success.html 페이지 로드됨');
-
-        // 1. POST 방식의 폼 데이터 읽기
-        const forms = document.forms;
-        if (forms.length > 0) {
-            const formData = new FormData(forms[0]);
-            formData.forEach((value, key) => {
-                paymentData[key] = value;
-                console.log(`폼 데이터: ${key} = ${value}`);
-            });
-        } else {
-            // 2. 폼이 없는 경우 sessionStorage에서 가져오기 (✅ 2번 기능 적용 부분)
-            const keys = [
-                'userId', 'orderId', 'orderName',
-                'amount', 'method', 'paymentKey', 'creditAmount'
-            ];
-            keys.forEach(key => {
-                const val = sessionStorage.getItem(key);
-                if (val) {
-                    paymentData[key] = val;
-                    console.log(`sessionStorage: ${key} = ${val}`);
-                }
-            });
-        }
-
-        console.log('최종 결제 데이터:', paymentData);
-
-        const { userId, orderId, orderName, amount, method, paymentKey, creditAmount } = paymentData;
-
-        // 뒤로가기 링크 설정
-        const backLink = document.getElementById('back-to-shop');
-        if (backLink && userId) {
-            backLink.href = '/';
-        } else {
-            backLink.href = '/login';
-        }
-
-        // 결제 정보 표시
-        document.getElementById('userId').textContent = userId || '-';
-        document.getElementById('orderId').textContent = orderId || '-';
-        document.getElementById('orderName').textContent = orderName || '-';
-        document.getElementById('amount').textContent = amount ?
-            `${Number(amount).toLocaleString()}원` : '-';
-        document.getElementById('method').textContent = method || '-';
-
-        // 결제 확인 및 구매 정보 전송
-        if (paymentKey && orderId && amount) {
-            confirmPayment(paymentKey, orderId, amount);
-        }
-
-        if (userId && amount && creditAmount) sendPurchaseInfo(userId, creditAmount, amount).then(success => {
-                if (success) console.log('크레딧 구매 정보가 성공적으로 전송되었습니다.');
-                else console.warn('크레딧 구매 정보 전송에 실패했습니다.');
-            });
     });
 
-    function displayPaymentInfo(paymentData, userId) {
-        // 결제 정보를 화면에 표시
-        document.getElementById('user-id').textContent = userId;
-        document.getElementById('order-id').textContent = paymentData.orderId;
-        document.getElementById('amount').textContent = paymentData.amount + '원';
-        // ... 기타 정보 표시
+    function displayPaymentInfo(paymentInfo) {
+        // 각 필드에 데이터 표시
+        document.getElementById('userId').textContent = paymentInfo.userId || '-';
+        document.getElementById('orderId').textContent = paymentInfo.orderId || '-';
+        document.getElementById('orderName').textContent = paymentInfo.orderName || '-';
+        document.getElementById('amount').textContent = paymentInfo.amount ? 
+            `${Number(paymentInfo.amount).toLocaleString()}원` : '-';
+        document.getElementById('method').textContent = paymentInfo.method || '-';
+        document.getElementById('creditAmount').textContent = paymentInfo.creditAmount ? 
+            `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : '-';
+        
+        // 결제 정보 표시
+        document.getElementById('paymentDetails').style.display = 'block';
     }
 
-
-    function confirmPayment(paymentKey, orderId, amount) {
-        console.log('결제 확인 요청:', { paymentKey, orderId, amount });
-        // 실제 결제 검증 API 요청 로직이 여기에 들어갈 수 있음
+    function showError() {
+        document.getElementById('errorMessage').style.display = 'block';
+        // 3초 후 자동으로 메인 페이지로 이동
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 3000);
     }
 
     async function sendPurchaseInfo(userId, creditAmount, amount) {
-        console.log('구매 정보 전송:', { userId, creditAmount, amount });
-        // 실제 API 전송 로직이 여기에 들어갈 수 있음
-        return true;
+        try {
+            console.log('📤 구매 정보 전송:', { userId, creditAmount, amount });
+            
+            const response = await fetch('/purchase', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    uid: userId,
+                    creditAmount: Number(creditAmount),
+                    timestamp: new Date().toISOString(),
+                    price: Number(amount)
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ 서버 응답:', result);
+                return true;
+            } else {
+                console.error('❌ 서버 응답 오류:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ 구매 정보 전송 실패:', error);
+            return false;
+        }
     }
 </script>
 </body>

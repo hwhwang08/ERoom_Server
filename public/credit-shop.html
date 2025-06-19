@@ -366,57 +366,26 @@
     }
 
     // HTTP 방식으로 success 페이지에 데이터 전달하는 함수도 전역으로 정의
+    // redirectToSuccessWithHttpData 함수를 이것으로 교체
     function redirectToSuccessWithHttpData(paymentData, userId) {
-        // 서버에 데이터 임시 저장 요청
-        fetch('/store-payment-data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                paymentData: paymentData,
-                userId: userId
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 토큰 기반 URL로 리다이렉트 (민감정보 없음)
-                    window.location.href = data.redirectUrl;
-                } else {
-                    alert('결제 데이터 저장 실패: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('❌ 데이터 저장 요청 실패:', error);
-                alert('서버 통신 실패');
-            });
-
-
-        // form을 동적으로 생성하여 POST 방식으로 데이터 전송
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/success';
-        form.style.display = 'none';
-
-        // userId도 포함해서 전달
-        const input_userId = document.createElement('input');
-        input_userId.type = 'hidden';
-        input_userId.name = 'userId';
-        input_userId.value = userId;
-        form.appendChild(input_userId);
-
-        // 각 데이터를 hidden input으로 추가
-        Object.keys(paymentData).forEach(key => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = paymentData[key];
-            form.appendChild(input);
-        });
-
-        document.body.appendChild(form);
-        form.submit();
+        console.log('💾 sessionStorage에 결제 정보 저장');
+        
+        // sessionStorage에 결제 정보 저장 (브라우저 탭 종료시까지 유지)
+        const paymentInfo = {
+            userId: decodeURIComponent(userId),
+            orderId: paymentData.orderId,
+            amount: paymentData.amount,
+            orderName: paymentData.orderName,
+            method: paymentData.method,
+            creditAmount: paymentData.creditAmount,
+            timestamp: Date.now() // 타임스탬프 추가
+        };
+        
+        // sessionStorage에 저장
+        sessionStorage.setItem('successPageData', JSON.stringify(paymentInfo));
+        
+        // URL에는 민감정보 없이 단순 이동
+        window.location.href = '/success';
     }
 
     function requestpay() {
