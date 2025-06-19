@@ -455,26 +455,108 @@ app.get('/payment-complete', async (req, res) => {
 });
 
 app.get('/save-uid', async (req, res) => {
-    const uidParam = req.query.uid;
+    try {
+        const { uid } = req.query;
 
-    if (!uidParam) {
-        return res.status(400).send('UID가 필요합니다.');
-    }
+        if (!uid) {
+            return res.status(400).json({
+                success: false,
+                message: 'UID가 필요합니다.'
+            });
+        }
 
-    const result = await checkUserExists(uidParam);
+        console.log('💾 UID 저장 요청:', uid);
 
-    if (result.userExists) {
-        res.cookie('uid', uidParam, {
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
+        // 사용자 존재 여부 확인
+        const userCheck = await checkUserExists(uid);
+
+        if (!userCheck.userExists) {
+            console.log('❌ 해당 UID의 유저를 찾을 수 없습니다:', uid);
+            return res.status(404).json({
+                success: false,
+                message: '해당 UID의 유저를 찾을 수 없습니다.',
+                uid: uid
+            });
+        }
+
+        console.log('✅ 사용자 확인 완료:', userCheck.userdata[0]?.nickname || 'Unknown');
+
+        // sessionStorage에 저장하기 위해 JavaScript로 리다이렉트
+        const redirectScript = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>로그인 처리 중...</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                .container {
+                    text-align: center;
+                    background: white;
+                    padding: 40px;
+                    border-radius: 20px;
+                    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+                }
+                .loading {
+                    display: inline-block;
+                    width: 40px;
+                    height: 40px;
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #667eea;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 20px auto;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>🔐 로그인 처리 중...</h2>
+                <div class="loading"></div>
+                <p>잠시만 기다려주세요.</p>
+            </div>
+            <script>
+                console.log('💾 UID 저장:', '${uid}');
+                console.log('👤 사용자 정보:', '${userCheck.userdata[0]?.nickname || 'Unknown'}');
+                
+                // sessionStorage에 UID 저장
+                sessionStorage.setItem('userUid', '${uid}');
+                sessionStorage.setItem('userNickname', '${userCheck.userdata[0]?.nickname || 'Unknown'}');
+                
+                console.log('✅ sessionStorage 저장 완료');
+                
+                // 3초 후 크레딧 상점으로 이동
+                setTimeout(() => {
+                    window.location.href = '/credit-shop.html';
+                }, 2000);
+            </script>
+        </body>
+        </html>
+        `;
+
+        res.send(redirectScript);
+
+    } catch (error) {
+        console.error('❌ save-uid 처리 오류:', error);
+        res.status(500).json({
+            success: false,
+            message: '서버 오류가 발생했습니다.',
+            error: error.message
         });
-        res.redirect('/');
-    } else {
-        res.status(404).send('UID의 유저를 찾을 수 읍슴');
     }
 });
+
 
 app.get('/login', (req, res) => {
     const filePath = path.join(__dirname, '../public/login.html');
