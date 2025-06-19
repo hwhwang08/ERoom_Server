@@ -1,11 +1,6 @@
-
 {
   "version": 2,
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
-    },
     {
       "src": "/firebase-config",
       "dest": "/api/index.js"
@@ -43,11 +38,23 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/health",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/store-payment-data",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/get-payment-data/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/",
       "dest": "/api/index.js"
     },
     {
-      "src": "/health",
+      "src": "/api/(.*)",
       "dest": "/api/index.js"
     },
     {

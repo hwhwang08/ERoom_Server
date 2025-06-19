@@ -41,15 +41,26 @@ try {
         console.log('🔑 Firebase 환경변수 찾음!');
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
-        if (!admin.apps.length) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
-            });
-            firebaseInitialized = true;
-            console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
+        try {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            console.log('✅ JSON 파싱 성공');
+            console.log('🔑 프로젝트 ID:', serviceAccount.project_id);
+            console.log('🔑 클라이언트 이메일:', serviceAccount.client_email);
+
+            if (!admin.apps.length) {
+                admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount),
+                    databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
+                });
+                firebaseInitialized = true;
+                console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
+            }
+        } catch (parseError) {
+            console.error('❌ JSON 파싱 오류:', parseError.message);
+            console.log('🔍 환경변수 시작 부분:', process.env.FIREBASE_SERVICE_ACCOUNT.substring(0, 100));
         }
     } else {
+        console.log('⚠️ FIREBASE_SERVICE_ACCOUNT 환경변수 없음');
         // 로컬 개발환경용 - JSON 파일 사용
         try {
             const serviceAccount = require('../eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
@@ -68,6 +79,7 @@ try {
     }
 } catch (error) {
     console.error('❌ Firebase 초기화 오류:', error.message);
+    console.error('❌ 전체 스택:', error.stack);
     console.log('💡 Firebase 기능은 비활성화됩니다.');
 }
 
@@ -409,21 +421,24 @@ app.get('/save-uid', async (req, res) => {
     console.log('🔍 save-uid 요청 - UID:', uidParam);
 
     try {
-        const result = await checkUserExists(uidParam);
-        console.log("✅ 세이브 uid의 리절트 값:", JSON.stringify(result, null, 2));
+        if (firebaseInitialized) {
+            // Firebase가 활성화된 경우 정상 처리
+            const result = await checkUserExists(uidParam);
+            console.log("✅ 세이브 uid의 리절트 값:", JSON.stringify(result, null, 2));
 
-        if (result.userExists) {
-            console.log('✅ 사용자 존재 확인, 쿠키 설정 및 리다이렉트');
-            res.cookie('uid', uidParam, {
-                path: '/',
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
-            });
-            res.redirect('/');
-        } else {
-            console.log('❌ 사용자를 찾을 수 없음:', uidParam);
-            res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
+            if (result.userExists) {
+                console.log('✅ 사용자 존재 확인, 쿠키 설정 및 리다이렉트');
+                res.cookie('uid', uidParam, {
+                    path: '/',
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax'
+                });
+                res.redirect('/');
+            } else {
+                console.log('❌ 사용자를 찾을 수 없음:', uidParam);
+                res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
+            }
         }
     } catch (error) {
         console.error('❌ save-uid 처리 중 오류:', error);
