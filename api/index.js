@@ -70,6 +70,14 @@ try {
     console.log('💡 Firebase 기능은 비활성화됩니다.');
 }
 
+// 임시 데이터 저장소 (메모리) - 맨 위로 이동
+const tempDataStore = new Map();
+
+// 임시 토큰 생성 함수
+function generateTempToken() {
+    return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
 // 임시 사용자 확인 함수 (Firebase 없이)
 async function checkUserExists(uid) {
     if (!firebaseInitialized) {
@@ -143,7 +151,100 @@ async function verifyPayment(imp_uid) {
 
 function validateUserId(userId) { return true; }
 
-// 기존 라우트에 추가
+// ✅ 중요! 토큰 관련 라우트들을 맨 위로 이동
+app.post('/store-payment-data', (req, res) => {
+    try {
+        console.log('💾 결제 데이터 저장 요청:', req.body);
+        
+        const { paymentData, userId } = req.body;
+        
+        if (!paymentData || !userId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: '필수 데이터가 누락되었습니다.' 
+            });
+        }
+        
+        // 임시 토큰 생성
+        const tempToken = generateTempToken();
+        
+        // 데이터를 임시 저장 (5분 후 자동 삭제)
+        tempDataStore.set(tempToken, { 
+            paymentData, 
+            userId, 
+            timestamp: Date.now() 
+        });
+        
+        // 5분 후 데이터 삭제
+        setTimeout(() => {
+            tempDataStore.delete(tempToken);
+            console.log('🗑️ 토큰 만료로 삭제:', tempToken);
+        }, 5 * 60 * 1000); // 5분
+        
+        console.log('✅ 결제 데이터 임시 저장 완료:', tempToken);
+        
+        res.json({
+            success: true,
+            tempToken: tempToken,
+            redirectUrl: `/success?token=${tempToken}`
+        });
+        
+    } catch (error) {
+        console.error('❌ 데이터 저장 실패:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '데이터 저장 실패', 
+            error: error.message 
+        });
+    }
+});
+
+app.get('/get-payment-data/:token', (req, res) => {
+    try {
+        const { token } = req.params;
+        console.log('🔍 토큰으로 데이터 조회:', token);
+        
+        const data = tempDataStore.get(token);
+        
+        if (!data) {
+            console.log('❌ 토큰에 해당하는 데이터 없음:', token);
+            return res.status(404).json({ 
+                success: false, 
+                message: '데이터를 찾을 수 없거나 만료되었습니다.' 
+            });
+        }
+        
+        // 5분 경과 확인
+        if (Date.now() - data.timestamp > 5 * 60 * 1000) {
+            tempDataStore.delete(token);
+            console.log('⏰ 토큰 만료:', token);
+            return res.status(404).json({ 
+                success: false, 
+                message: '데이터가 만료되었습니다.' 
+            });
+        }
+        
+        // 한 번 조회 후 삭제 (보안)
+        tempDataStore.delete(token);
+        console.log('✅ 데이터 조회 성공, 토큰 삭제:', token);
+        
+        res.json({
+            success: true,
+            paymentData: data.paymentData,
+            userId: data.userId
+        });
+        
+    } catch (error) {
+        console.error('❌ 데이터 조회 실패:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '데이터 조회 실패', 
+            error: error.message 
+        });
+    }
+});
+
+// Firebase 설정 라우트
 app.get('/firebase-config', (req, res) => {
     try {
         console.log('🔍 Firebase 환경변수 디버그:');
@@ -151,7 +252,6 @@ app.get('/firebase-config', (req, res) => {
         console.log('AUTH_DOMAIN:', process.env.NEXT_FIREBASE_AUTH_DOMAIN ? '✅ 존재' : '❌ 없음');
         console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
 
-        // Firebase 설정 객체 생성
         const config = {
             apiKey: process.env.NEXT_FIREBASE_API_KEY || "dummy-api-key",
             authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN || "dummy-auth-domain",
@@ -164,31 +264,17 @@ app.get('/firebase-config', (req, res) => {
         };
 
         console.log('🎯 Firebase Config 전송:', Object.keys(config));
-
-        // Content-Type을 명시적으로 설정
         res.setHeader('Content-Type', 'application/json');
         res.json(config);
 
     } catch (error) {
         console.error('❌ Firebase config 오류:', error);
+        res.setHeader('Content-Type', 'application/json');
+        res.status(500).json({
+            error: 'Firebase config 로드 실패',
+            message: error.message
+        });
     }
-    // console.log('🔍 Firebase 환경변수 디버그:');
-    // console.log('API_KEY:', process.env.NEXT_FIREBASE_API_KEY ? '✅ 존재' : '❌ 없음');
-    // console.log('AUTH_DOMAIN:', process.env.NEXT_FIREBASE_AUTH_DOMAIN ? '✅ 존재' : '❌ 없음');
-    // console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
-    //
-    // console.log('🎯 Firebase Config 전송:', Object.keys(config));
-    // res.json({
-    //     apiKey: process.env.NEXT_FIREBASE_API_KEY,
-    //     authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN,
-    //     databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
-    //     projectId: process.env.NEXT_FIREBASE_PROJECT_ID,
-    //     storageBucket: process.env.NEXT_FIREBASE_STORAGE_BUCKET,
-    //     messagingSenderId: process.env.NEXT_FIREBASE_MESSAGING_SENDER_ID,
-    //     appId: process.env.NEXT_FIREBASE_APP_ID,
-    //     measurementId: process.env.NEXT_FIREBASE_MEASUREMENT_ID
-    // });
-
 });
 
 // 헬스체크 라우트
@@ -202,9 +288,9 @@ app.get('/health', (req, res) => {
         firebase: firebaseInitialized ? 'initialized' : 'disabled',
         firebaseEnvExists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
         iamport: !!IMP_API_KEY,
-        version: '2.1.0-debug'
+        version: '2.1.0-debug',
+        tempDataCount: tempDataStore.size
     });
-
 });
 
 // 기본 라우트들
@@ -217,7 +303,6 @@ app.get('/verify-token', async (req, res) => {
         });
     }
 
-    // Firebase 비활성화 상태에서는 임시 응답
     if (!firebaseInitialized) {
         const testUid = 'test_' + Date.now();
         const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
@@ -232,14 +317,13 @@ app.get('/verify-token', async (req, res) => {
         });
     }
 
-    // Firebase 활성화 시 실제 토큰 검증
     const idToken = authHeader.split('Bearer ')[1].trim();
     try {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         const uid = decodedToken.uid;
         const result = await checkUserExists(uid);
 
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
         const host = req.headers['x-forwarded-host'] || req.get('host');
         const baseUrl = `${protocol}://${host}`;
 
@@ -269,6 +353,7 @@ app.get('/verify-user-and-payment', async (req, res) => {
     }
 
     const userId = authHeader.replace('Bearer ', '').trim();
+    console.log('🔍 사용자 검증:', decodeURIComponent(userId));
 
     if (!userId || !validateUserId(userId)) {
         return res.status(401).json({
@@ -283,7 +368,7 @@ app.get('/verify-user-and-payment', async (req, res) => {
     res.json({
         success: true,
         userExists: true,
-        userId,
+        userId: decodeURIComponent(userId),
         message: '사용자 검증 및 결제 데이터 처리 완료',
         paymentData: { orderId, amount, orderName, method, paymentKey, creditAmount }
     });
@@ -391,6 +476,15 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/success', (req, res) => {
+    // 토큰 방식인지 확인
+    const token = req.query.token;
+    if (token) {
+        // 토큰 방식 - success.html 그대로 반환
+        const filePath = path.join(__dirname, '../public/success.html');
+        return res.sendFile(filePath);
+    }
+
+    // 기존 방식 (호환성 유지)
     const nickname = req.cookies?.nickname || 'unknown';
     const { imp_uid, merchant_uid, orderId, amount, orderName, method } = req.query;
 
@@ -439,94 +533,28 @@ app.post('/iamport-webhook', (req, res) => {
     res.send('웹훅 OK');
 });
 
-// 404 처리
-app.use((req, res) => {
-    res.status(404).send('페이지를 찾을 수 없습니다.');
-});
-
 // 에러 처리
 app.use((err, req, res, next) => {
     console.error('서버 에러:', err);
-    res.status(500).send('서버 내부 오류가 발생했습니다.');
+    res.status(500).json({ 
+        success: false, 
+        message: '서버 내부 오류가 발생했습니다.',
+        error: err.message 
+    });
+});
+
+// 404 처리 - 맨 마지막에 위치
+app.use((req, res) => {
+    console.log('❌ 404 - 찾을 수 없는 경로:', req.path);
+    res.status(404).json({ 
+        success: false, 
+        message: '페이지를 찾을 수 없습니다.',
+        path: req.path 
+    });
 });
 
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
-
-// 임시 데이터 저장소 (메모리)
-const tempDataStore = new Map();
-
-// 임시 토큰 생성 함수
-function generateTempToken() {
-    return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
-
-// 결제 완료 후 임시 토큰 생성 라우트
-app.post('/store-payment-data', express.json(), (req, res) => {
-    try {
-        const { paymentData, userId } = req.body;
-        
-        // 임시 토큰 생성
-        const tempToken = generateTempToken();
-        
-        // 데이터를 임시 저장 (5분 후 자동 삭제)
-        tempDataStore.set(tempToken, { paymentData, userId, timestamp: Date.now() });
-        
-        // 5분 후 데이터 삭제
-        setTimeout(() => {
-            tempDataStore.delete(tempToken);
-        }, 5 * 60 * 1000); // 5분
-        
-        console.log('💾 결제 데이터 임시 저장:', tempToken);
-        
-        res.json({
-            success: true,
-            tempToken: tempToken,
-            redirectUrl: `/success?token=${tempToken}`
-        });
-        
-    } catch (error) {
-        console.error('❌ 데이터 저장 실패:', error);
-        res.status(500).json({ success: false, message: '데이터 저장 실패' });
-    }
-});
-
-// success 페이지에서 토큰으로 데이터 조회
-app.get('/get-payment-data/:token', (req, res) => {
-    try {
-        const { token } = req.params;
-        const data = tempDataStore.get(token);
-        
-        if (!data) {
-            return res.status(404).json({ 
-                success: false, 
-                message: '데이터를 찾을 수 없거나 만료되었습니다.' 
-            });
-        }
-        
-        // 5분 경과 확인
-        if (Date.now() - data.timestamp > 5 * 60 * 1000) {
-            tempDataStore.delete(token);
-            return res.status(404).json({ 
-                success: false, 
-                message: '데이터가 만료되었습니다.' 
-            });
-        }
-        
-        // 한 번 조회 후 삭제 (보안)
-        tempDataStore.delete(token);
-        
-        res.json({
-            success: true,
-            paymentData: data.paymentData,
-            userId: data.userId
-        });
-        
-    } catch (error) {
-        console.error('❌ 데이터 조회 실패:', error);
-        res.status(500).json({ success: false, message: '데이터 조회 실패' });
-    }
-});
 
 // 로컬 개발용
 if (require.main === module) {
