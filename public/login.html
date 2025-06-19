@@ -6,7 +6,8 @@
     <title>사용자 인증</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
+    <!-- firebase-config.js 제거 -->
+    <!-- 기존 스타일 유지 -->
     <style>
         * {
             box-sizing: border-box;
@@ -159,16 +160,11 @@
     </style>
 </head>
 <body>
+<!-- 기존 HTML 구조 그대로 유지 -->
 <div class="container">
-    <div class="logo">
-        <svg viewBox="0 0 24 24" fill="#4a90e2">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-        </svg>
-    </div>
     <h1>사용자 인증</h1>
     <p id="main-message">사용자 ID를 입력하여 계속하세요.</p>
     
-    <!-- 오류 알림 영역 -->
     <div class="error-alert" id="error-alert">
         <strong>오류:</strong> <span id="error-alert-message"></span>
     </div>
@@ -176,19 +172,7 @@
     <form id="user-form">
         <div class="form-group">
             <label for="user-id">사용자 ID (UID)</label>
-            <div class="input-wrapper">
-                <input
-                        type="text"
-                        id="user-id"
-                        name="userId"
-                        placeholder="사용자 ID를 입력하세요"
-                        autocomplete="off"
-                        required
-                >
-                <span class="validation-icon valid-icon">✓</span>
-                <span class="validation-icon invalid-icon">✗</span>
-            </div>
-            <div class="error-message" id="error-message">유효하지 않은 사용자 ID입니다.</div>
+            <input type="text" id="user-id" name="userId" placeholder="사용자 ID를 입력하세요" required>
         </div>
 
         <button type="submit" id="submit-button">
@@ -197,42 +181,41 @@
         </button>
     </form>
 </div>
+
 <script>
-    // !!!!! 전체적으로 수정필요. 인덱스는 유저 히스 유아이디로 하게만들고 크레딧샵은 uid로 해버려서
-    document.addEventListener('DOMContentLoaded', function() {
+    let db = null;
+    let firebaseInitialized = false;
+
+    // Firebase 설정을 서버에서 가져와서 초기화
+    async function initializeFirebase() {
+        try {
+            const response = await fetch('/firebase-config');
+            const firebaseConfig = await response.json();
+            
+            if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                firebaseInitialized = true;
+                console.log('✅ Firebase 클라이언트 초기화 성공');
+            } else {
+                console.warn('⚠️ Firebase 설정을 가져올 수 없음');
+            }
+        } catch (error) {
+            console.error('❌ Firebase 초기화 오류:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Firebase 초기화
+        await initializeFirebase();
+
         const form = document.getElementById('user-form');
         const userIdInput = document.getElementById('user-id');
-        const errorMessage = document.getElementById('error-message');
+        const errorAlert = document.getElementById('error-alert');
+        const errorAlertMessage = document.getElementById('error-alert-message');
         const submitButton = document.getElementById('submit-button');
         const buttonText = document.getElementById('button-text');
         const loader = document.getElementById('loader');
-        const validIcon = document.querySelector('.valid-icon');
-        const invalidIcon = document.querySelector('.invalid-icon');
-        const errorAlert = document.getElementById('error-alert');
-        const errorAlertMessage = document.getElementById('error-alert-message');
-        const mainMessage = document.getElementById('main-message');
-
-        // Firebase Firestore 초기화
-        const db = firebase.firestore();
-        const usersCollection = db.collection('user_Datas');
-
-        // 실시간 유효성 검사
-        userIdInput.addEventListener('input', function() {
-            const userId = userIdInput.value.trim();
-
-            // 오류 알림 숨기기
-            errorAlert.style.display = 'none';
-
-            if (userId === '') {
-                // 입력이 비어있으면 아이콘 숨기기
-                validIcon.style.display = 'none';
-                invalidIcon.style.display = 'none';
-                errorMessage.style.display = 'none';
-                submitButton.disabled = true;
-            } else {
-                submitButton.disabled = false;
-            }
-        });
 
         // 폼 제출 처리
         form.addEventListener('submit', async function(e) {
@@ -240,63 +223,62 @@
 
             const userId = userIdInput.value.trim();
 
-            if (userId === '') {
-                errorMessage.textContent = '사용자 UID가 없다.';
-                errorMessage.style.display = 'block';
+            if (!userId) {
+                showError('사용자 ID를 입력해주세요.');
                 return;
             }
 
-            // 로딩 표시
-            buttonText.style.display = 'none';
-            loader.style.display = 'block';
-            submitButton.disabled = true;
-            errorAlert.style.display = 'none';
+            // 로딩 시작
+            setLoading(true);
+            hideError();
 
             try {
-                // Firebase에서 사용자 ID 확인
-                // const userDoc = await usersCollection.doc(userId).get();
-                const querySnapshot = await usersCollection
-                    .where("uid", "==", userId)
-                    .get();
+                if (firebaseInitialized && db) {
+                    // Firebase에서 사용자 확인
+                    const querySnapshot = await db.collection('user_Datas')
+                        .where("uid", "==", userId)
+                        .get();
 
-                if (!querySnapshot.empty) {
-                    // 사용자 ID가 존재하는 경우
-                    console.log('Firebase에서 사용자 ID 확인 완료:', userId);
-                    sessionStorage.setItem('uid', userId);
-                    window.location.href = '/save-uid?uid=' + userId;
+                    if (!querySnapshot.empty) {
+                        console.log('✅ Firebase에서 사용자 확인 완료:', userId);
+                        sessionStorage.setItem('uid', userId);
+                        window.location.href = '/save-uid?uid=' + encodeURIComponent(userId);
+                    } else {
+                        showError(`사용자 ID "${userId}"가 등록되지 않았습니다.`);
+                        setLoading(false);
+                    }
                 } else {
-                    // 존재하지 않는 사용자 ID
-                    console.log('존재하지 않는 사용자 ID:', userId);
-                    
-                    errorAlert.style.display = 'block';
-                    errorAlertMessage.textContent = `사용자 ID "${userId}"가 Firebase에 등록되지 않았습니다.`;
-                    
-                    // 로딩 상태 해제
-                    buttonText.style.display = 'block';
-                    loader.style.display = 'none';
-                    submitButton.disabled = false;
-
-                    validIcon.style.display = 'none';
-                    invalidIcon.style.display = 'block';
+                    // Firebase 비활성화 시 서버로 직접 요청
+                    console.log('🔄 Firebase 비활성화 - 서버로 요청');
+                    window.location.href = '/save-uid?uid=' + encodeURIComponent(userId);
                 }
             } catch (error) {
-                console.error('Firebase 사용자 확인 오류:', error);
-                
-                errorAlert.style.display = 'block';
-                errorAlertMessage.textContent = '사용자 확인 중 오류가 발생했습니다. 다시 시도해주세요.';
+                console.error('❌ 사용자 확인 오류:', error);
+                showError('사용자 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+                setLoading(false);
+            }
+        });
 
-                // 로딩 상태 해제
+        function setLoading(loading) {
+            if (loading) {
+                buttonText.style.display = 'none';
+                loader.style.display = 'block';
+                submitButton.disabled = true;
+            } else {
                 buttonText.style.display = 'block';
                 loader.style.display = 'none';
                 submitButton.disabled = false;
             }
-        });
+        }
 
-        // 페이지 로드 시 입력 필드 초기화 (URL 파라미터에서 가져온 경우 제외)
-        if (userIdInput.value) {
-            // 입력값이 있으면 유효성 검사 실행
-            userIdInput.dispatchEvent(new Event('input'));
-        } else submitButton.disabled = true;
+        function showError(message) {
+            errorAlertMessage.textContent = message;
+            errorAlert.style.display = 'block';
+        }
+
+        function hideError() {
+            errorAlert.style.display = 'none';
+        }
     });
 </script>
 </body>
