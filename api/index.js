@@ -145,22 +145,49 @@ function validateUserId(userId) { return true; }
 
 // 기존 라우트에 추가
 app.get('/firebase-config', (req, res) => {
-    console.log('🔍 Firebase 환경변수 디버그:');
-    console.log('API_KEY:', process.env.NEXT_FIREBASE_API_KEY ? '✅ 존재' : '❌ 없음');
-    console.log('AUTH_DOMAIN:', process.env.NEXT_FIREBASE_AUTH_DOMAIN ? '✅ 존재' : '❌ 없음');
-    console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
+    try {
+        console.log('🔍 Firebase 환경변수 디버그:');
+        console.log('API_KEY:', process.env.NEXT_FIREBASE_API_KEY ? '✅ 존재' : '❌ 없음');
+        console.log('AUTH_DOMAIN:', process.env.NEXT_FIREBASE_AUTH_DOMAIN ? '✅ 존재' : '❌ 없음');
+        console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
 
-    console.log('🎯 Firebase Config 전송:', Object.keys(config));
-    res.json({
-        apiKey: process.env.NEXT_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN,
-        databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: process.env.NEXT_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_FIREBASE_APP_ID,
-        measurementId: process.env.NEXT_FIREBASE_MEASUREMENT_ID
-    });
+        // Firebase 설정 객체 생성
+        const config = {
+            apiKey: process.env.NEXT_FIREBASE_API_KEY || "dummy-api-key",
+            authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN || "dummy-auth-domain",
+            databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: process.env.NEXT_FIREBASE_PROJECT_ID || "dummy-project-id",
+            storageBucket: process.env.NEXT_FIREBASE_STORAGE_BUCKET || "dummy-storage-bucket",
+            messagingSenderId: process.env.NEXT_FIREBASE_MESSAGING_SENDER_ID || "dummy-sender-id",
+            appId: process.env.NEXT_FIREBASE_APP_ID || "dummy-app-id",
+            measurementId: process.env.NEXT_FIREBASE_MEASUREMENT_ID || "dummy-measurement-id"
+        };
+
+        console.log('🎯 Firebase Config 전송:', Object.keys(config));
+
+        // Content-Type을 명시적으로 설정
+        res.setHeader('Content-Type', 'application/json');
+        res.json(config);
+
+    } catch (error) {
+        console.error('❌ Firebase config 오류:', error);
+    }
+    // console.log('🔍 Firebase 환경변수 디버그:');
+    // console.log('API_KEY:', process.env.NEXT_FIREBASE_API_KEY ? '✅ 존재' : '❌ 없음');
+    // console.log('AUTH_DOMAIN:', process.env.NEXT_FIREBASE_AUTH_DOMAIN ? '✅ 존재' : '❌ 없음');
+    // console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
+    //
+    // console.log('🎯 Firebase Config 전송:', Object.keys(config));
+    // res.json({
+    //     apiKey: process.env.NEXT_FIREBASE_API_KEY,
+    //     authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN,
+    //     databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
+    //     projectId: process.env.NEXT_FIREBASE_PROJECT_ID,
+    //     storageBucket: process.env.NEXT_FIREBASE_STORAGE_BUCKET,
+    //     messagingSenderId: process.env.NEXT_FIREBASE_MESSAGING_SENDER_ID,
+    //     appId: process.env.NEXT_FIREBASE_APP_ID,
+    //     measurementId: process.env.NEXT_FIREBASE_MEASUREMENT_ID
+    // });
 
 });
 
