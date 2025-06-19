@@ -426,6 +426,81 @@ app.use((err, req, res, next) => {
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
 
+// 임시 데이터 저장소 (메모리)
+const tempDataStore = new Map();
+
+// 임시 토큰 생성 함수
+function generateTempToken() {
+    return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// 결제 완료 후 임시 토큰 생성 라우트
+app.post('/store-payment-data', express.json(), (req, res) => {
+    try {
+        const { paymentData, userId } = req.body;
+        
+        // 임시 토큰 생성
+        const tempToken = generateTempToken();
+        
+        // 데이터를 임시 저장 (5분 후 자동 삭제)
+        tempDataStore.set(tempToken, { paymentData, userId, timestamp: Date.now() });
+        
+        // 5분 후 데이터 삭제
+        setTimeout(() => {
+            tempDataStore.delete(tempToken);
+        }, 5 * 60 * 1000); // 5분
+        
+        console.log('💾 결제 데이터 임시 저장:', tempToken);
+        
+        res.json({
+            success: true,
+            tempToken: tempToken,
+            redirectUrl: `/success?token=${tempToken}`
+        });
+        
+    } catch (error) {
+        console.error('❌ 데이터 저장 실패:', error);
+        res.status(500).json({ success: false, message: '데이터 저장 실패' });
+    }
+});
+
+// success 페이지에서 토큰으로 데이터 조회
+app.get('/get-payment-data/:token', (req, res) => {
+    try {
+        const { token } = req.params;
+        const data = tempDataStore.get(token);
+        
+        if (!data) {
+            return res.status(404).json({ 
+                success: false, 
+                message: '데이터를 찾을 수 없거나 만료되었습니다.' 
+            });
+        }
+        
+        // 5분 경과 확인
+        if (Date.now() - data.timestamp > 5 * 60 * 1000) {
+            tempDataStore.delete(token);
+            return res.status(404).json({ 
+                success: false, 
+                message: '데이터가 만료되었습니다.' 
+            });
+        }
+        
+        // 한 번 조회 후 삭제 (보안)
+        tempDataStore.delete(token);
+        
+        res.json({
+            success: true,
+            paymentData: data.paymentData,
+            userId: data.userId
+        });
+        
+    } catch (error) {
+        console.error('❌ 데이터 조회 실패:', error);
+        res.status(500).json({ success: false, message: '데이터 조회 실패' });
+    }
+});
+
 // 로컬 개발용
 if (require.main === module) {
     const PORT = process.env.PORT || 3000;
