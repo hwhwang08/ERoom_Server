@@ -10,6 +10,7 @@
     "test": "node api/index.js"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^7.11.1",
     "axios": "^1.10.0",
     "body-parser": "^2.2.0",
     "cookie-parser": "^1.4.7",
