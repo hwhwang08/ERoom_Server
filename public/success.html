@@ -136,130 +136,130 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Success 페이지 로드');
-    
-    // DOM이 완전히 로드될 때까지 잠시 대기
-    setTimeout(() => {
-        try {
-            // sessionStorage에서 결제 정보 가져오기
-            const storedData = sessionStorage.getItem('successPageData');
-            
-            if (!storedData) {
-                console.warn('⚠️ sessionStorage에 결제 정보가 없습니다');
-                showError();
-                return;
-            }
-            
-            const paymentInfo = JSON.parse(storedData);
-            console.log('📊 결제 정보 복원:', paymentInfo);
-            
-            // 타임스탬프 검증 (5분 이내 데이터만 유효)
-            const now = Date.now();
-            const dataAge = now - (paymentInfo.timestamp || 0);
-            const maxAge = 5 * 60 * 1000; // 5분
-            
-            if (dataAge > maxAge) {
-                console.warn('⚠️ 결제 정보가 만료되었습니다');
-                showError();
-                return;
-            }
-            
-            // 결제 정보 표시 (DOM 준비 후)
-            displayPaymentInfo(paymentInfo);
-            
-            // 사용된 데이터는 보안상 즉시 삭제
-            sessionStorage.removeItem('successPageData');
-            console.log('🗑️ sessionStorage 데이터 삭제 완료');
-            
-            // 구매 정보 서버 전송
-            if (paymentInfo.userId && paymentInfo.amount && paymentInfo.creditAmount) {
-                sendPurchaseInfo(paymentInfo.userId, paymentInfo.creditAmount, paymentInfo.amount)
-                    .then(success => {
-                        if (success) {
-                            console.log('✅ 크레딧 구매 정보 전송 성공');
-                        } else {
-                            console.warn('⚠️ 크레딧 구매 정보 전송 실패');
-                        }
-                    });
-            }
-            
-        } catch (error) {
-            console.error('❌ 결제 정보 처리 오류:', error);
-            showError();
-        }
-    }, 100); // 100ms 대기로 DOM 완전 로드 보장
-});
+        console.log('✅ Success 페이지 로드');
 
-function displayPaymentInfo(paymentInfo) {
-    console.log('🖼️ displayPaymentInfo 호출됨');
-    console.log('📋 받은 데이터:', paymentInfo);
-    
-    // DOM 요소 존재 확인 및 재시도 로직
-    const maxRetries = 5;
-    let retryCount = 0;
-    
-    function tryDisplayInfo() {
-        // DOM 요소 확인
-        const userIdEl = document.getElementById('userId');
-        const orderIdEl = document.getElementById('orderId');
-        const orderNameEl = document.getElementById('orderName');
-        const amountEl = document.getElementById('amount');
-        const methodEl = document.getElementById('method');
-        const creditAmountEl = document.getElementById('creditAmount');
-        
-        console.log('DOM 요소들:', { userIdEl, orderIdEl, orderNameEl, amountEl, methodEl, creditAmountEl });
-        
-        // 모든 DOM 요소가 존재하는지 확인
-        if (!userIdEl || !orderIdEl || !orderNameEl || !amountEl || !methodEl || !creditAmountEl) {
-            retryCount++;
-            if (retryCount < maxRetries) {
-                console.log(`⏳ DOM 요소 대기 중... (${retryCount}/${maxRetries})`);
-                setTimeout(tryDisplayInfo, 50); // 50ms 후 재시도
-                return;
-            } else {
-                console.error('❌ DOM 요소를 찾을 수 없습니다!');
-                return;
+        // DOM이 완전히 로드될 때까지 잠시 대기
+        setTimeout(() => {
+            try {
+                // sessionStorage에서 결제 정보 가져오기
+                const storedData = sessionStorage.getItem('successPageData');
+
+                if (!storedData) {
+                    console.warn('⚠️ sessionStorage에 결제 정보가 없습니다');
+                    showError();
+                    return;
+                }
+
+                const paymentInfo = JSON.parse(storedData);
+                console.log('📊 결제 정보 복원:', paymentInfo);
+
+                // 타임스탬프 검증 (5분 이내 데이터만 유효)
+                const now = Date.now();
+                const dataAge = now - (paymentInfo.timestamp || 0);
+                const maxAge = 5 * 60 * 1000; // 5분
+
+                if (dataAge > maxAge) {
+                    console.warn('⚠️ 결제 정보가 만료되었습니다');
+                    showError();
+                    return;
+                }
+
+                // 결제 정보 표시 (DOM 준비 후)
+                displayPaymentInfo(paymentInfo);
+
+                // 사용된 데이터는 보안상 즉시 삭제
+                sessionStorage.removeItem('successPageData');
+                console.log('🗑️ sessionStorage 데이터 삭제 완료');
+
+                // 구매 정보 서버 전송
+                if (paymentInfo.userId && paymentInfo.amount && paymentInfo.creditAmount) {
+                    sendPurchaseInfo(paymentInfo.userId, paymentInfo.creditAmount, paymentInfo.amount)
+                        .then(success => {
+                            if (success) {
+                                console.log('✅ 크레딧 구매 정보 전송 성공');
+                            } else {
+                                console.warn('⚠️ 크레딧 구매 정보 전송 실패');
+                            }
+                        });
+                }
+
+            } catch (error) {
+                console.error('❌ 결제 정보 처리 오류:', error);
+                showError();
             }
+        }, 100); // 100ms 대기로 DOM 완전 로드 보장
+    });
+
+    function displayPaymentInfo(paymentInfo) {
+        console.log('🖼️ displayPaymentInfo 호출됨');
+        console.log('📋 받은 데이터:', paymentInfo);
+
+        // DOM 요소 존재 확인 및 재시도 로직
+        const maxRetries = 5;
+        let retryCount = 0;
+
+        function tryDisplayInfo() {
+            // DOM 요소 확인
+            const userIdEl = document.getElementById('userId');
+            const orderIdEl = document.getElementById('orderId');
+            const orderNameEl = document.getElementById('orderName');
+            const amountEl = document.getElementById('amount');
+            const methodEl = document.getElementById('method');
+            const creditAmountEl = document.getElementById('creditAmount');
+
+            console.log('DOM 요소들:', { userIdEl, orderIdEl, orderNameEl, amountEl, methodEl, creditAmountEl });
+
+            // 모든 DOM 요소가 존재하는지 확인
+            if (!userIdEl || !orderIdEl || !orderNameEl || !amountEl || !methodEl || !creditAmountEl) {
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    console.log(`⏳ DOM 요소 대기 중... (${retryCount}/${maxRetries})`);
+                    setTimeout(tryDisplayInfo, 50); // 50ms 후 재시도
+                    return;
+                } else {
+                    console.error('❌ DOM 요소를 찾을 수 없습니다!');
+                    return;
+                }
+            }
+
+            // 각 필드에 데이터 표시
+            console.log('🎯 DOM 업데이트 시작');
+
+            userIdEl.textContent = paymentInfo.userId || 'N/A';
+            console.log('✅ userId 설정됨:', userIdEl.textContent);
+
+            orderIdEl.textContent = paymentInfo.orderId || 'N/A';
+            console.log('✅ orderId 설정됨:', orderIdEl.textContent);
+
+            orderNameEl.textContent = paymentInfo.orderName || 'N/A';
+            console.log('✅ orderName 설정됨:', orderNameEl.textContent);
+
+            const formattedAmount = paymentInfo.amount ?
+                `${Number(paymentInfo.amount).toLocaleString()}원` : 'N/A';
+            amountEl.textContent = formattedAmount;
+            console.log('✅ amount 설정됨:', amountEl.textContent);
+
+            methodEl.textContent = paymentInfo.method || 'N/A';
+            console.log('✅ method 설정됨:', methodEl.textContent);
+
+            const formattedCredit = paymentInfo.creditAmount ?
+                `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : 'N/A';
+            creditAmountEl.textContent = formattedCredit;
+            console.log('✅ creditAmount 설정됨:', creditAmountEl.textContent);
+
+            // 결제 정보 표시
+            const paymentDetails = document.getElementById('paymentDetails');
+            if (paymentDetails) {
+                paymentDetails.style.display = 'block';
+                console.log('✅ paymentDetails 표시됨');
+            }
+
+            console.log('🎉 모든 정보 표시 완료!');
         }
-        
-        // 각 필드에 데이터 표시
-        // console.log('🎯 DOM 업데이트 시작');
-        //
-        // userIdEl.textContent = paymentInfo.userId || 'N/A';
-        // console.log('✅ userId 설정됨:', userIdEl.textContent);
-        //
-        // orderIdEl.textContent = paymentInfo.orderId || 'N/A';
-        // console.log('✅ orderId 설정됨:', orderIdEl.textContent);
-        //
-        // orderNameEl.textContent = paymentInfo.orderName || 'N/A';
-        // console.log('✅ orderName 설정됨:', orderNameEl.textContent);
-        //
-        // const formattedAmount = paymentInfo.amount ?
-        //     `${Number(paymentInfo.amount).toLocaleString()}원` : 'N/A';
-        // amountEl.textContent = formattedAmount;
-        // console.log('✅ amount 설정됨:', amountEl.textContent);
-        //
-        // methodEl.textContent = paymentInfo.method || 'N/A';
-        // console.log('✅ method 설정됨:', methodEl.textContent);
-        //
-        // const formattedCredit = paymentInfo.creditAmount ?
-        //     `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : 'N/A';
-        // creditAmountEl.textContent = formattedCredit;
-        // console.log('✅ creditAmount 설정됨:', creditAmountEl.textContent);
-        
-        // 결제 정보 표시
-        const paymentDetails = document.getElementById('paymentDetails');
-        if (paymentDetails) {
-            paymentDetails.style.display = 'block';
-            console.log('✅ paymentDetails 표시됨');
-        }
-        
-        console.log('🎉 모든 정보 표시 완료!');
+
+        // DOM 업데이트 시작
+        tryDisplayInfo();
     }
-    
-    // DOM 업데이트 시작
-    tryDisplayInfo();
-}
 
     function showError() {
         document.getElementById('errorMessage').style.display = 'block';
@@ -272,7 +272,7 @@ function displayPaymentInfo(paymentInfo) {
     async function sendPurchaseInfo(userId, creditAmount, amount) {
         try {
             console.log('📤 구매 정보 전송:', { userId, creditAmount, amount });
-            
+
             const response = await fetch('/purchase', {
                 method: 'POST',
                 headers: {
@@ -285,7 +285,7 @@ function displayPaymentInfo(paymentInfo) {
                     price: Number(amount)
                 })
             });
-            
+
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ 서버 응답:', result);

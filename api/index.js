@@ -4,6 +4,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const querystring = require('querystring');
 const axios = require('axios');
+const fs = require("fs");
 require('dotenv').config();
 
 const app = express();
@@ -35,11 +36,11 @@ let firebaseInitialized = false;
 
 try {
     admin = require('firebase-admin');
-    
+
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        
+
         if (!admin.apps.length) {
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
@@ -52,7 +53,7 @@ try {
         // 로컬 개발환경용 - JSON 파일 사용
         try {
             const serviceAccount = require('../eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
-            
+
             if (!admin.apps.length) {
                 admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount),
@@ -104,7 +105,7 @@ async function checkUserExists(uid) {
 
         const userData = userdata.docs[0].data();
         console.log('✅ Firebase에서 사용자 찾음:', userData.nickname);
-        
+
         return {
             userExists: true,
             userdata: [userData]
@@ -155,46 +156,46 @@ function validateUserId(userId) { return true; }
 app.post('/store-payment-data', (req, res) => {
     try {
         console.log('💾 결제 데이터 저장 요청:', req.body);
-        
+
         const { paymentData, userId } = req.body;
-        
+
         if (!paymentData || !userId) {
-            return res.status(400).json({ 
-                success: false, 
-                message: '필수 데이터가 누락되었습니다.' 
+            return res.status(400).json({
+                success: false,
+                message: '필수 데이터가 누락되었습니다.'
             });
         }
-        
+
         // 임시 토큰 생성
         const tempToken = generateTempToken();
-        
+
         // 데이터를 임시 저장 (5분 후 자동 삭제)
-        tempDataStore.set(tempToken, { 
-            paymentData, 
-            userId, 
-            timestamp: Date.now() 
+        tempDataStore.set(tempToken, {
+            paymentData,
+            userId,
+            timestamp: Date.now()
         });
-        
+
         // 5분 후 데이터 삭제
         setTimeout(() => {
             tempDataStore.delete(tempToken);
             console.log('🗑️ 토큰 만료로 삭제:', tempToken);
         }, 5 * 60 * 1000); // 5분
-        
+
         console.log('✅ 결제 데이터 임시 저장 완료:', tempToken);
-        
+
         res.json({
             success: true,
             tempToken: tempToken,
             redirectUrl: `/success?token=${tempToken}`
         });
-        
+
     } catch (error) {
         console.error('❌ 데이터 저장 실패:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: '데이터 저장 실패', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: '데이터 저장 실패',
+            error: error.message
         });
     }
 });
@@ -203,43 +204,43 @@ app.get('/get-payment-data/:token', (req, res) => {
     try {
         const { token } = req.params;
         console.log('🔍 토큰으로 데이터 조회:', token);
-        
+
         const data = tempDataStore.get(token);
-        
+
         if (!data) {
             console.log('❌ 토큰에 해당하는 데이터 없음:', token);
-            return res.status(404).json({ 
-                success: false, 
-                message: '데이터를 찾을 수 없거나 만료되었습니다.' 
+            return res.status(404).json({
+                success: false,
+                message: '데이터를 찾을 수 없거나 만료되었습니다.'
             });
         }
-        
+
         // 5분 경과 확인
         if (Date.now() - data.timestamp > 5 * 60 * 1000) {
             tempDataStore.delete(token);
             console.log('⏰ 토큰 만료:', token);
-            return res.status(404).json({ 
-                success: false, 
-                message: '데이터가 만료되었습니다.' 
+            return res.status(404).json({
+                success: false,
+                message: '데이터가 만료되었습니다.'
             });
         }
-        
+
         // 한 번 조회 후 삭제 (보안)
         tempDataStore.delete(token);
         console.log('✅ 데이터 조회 성공, 토큰 삭제:', token);
-        
+
         res.json({
             success: true,
             paymentData: data.paymentData,
             userId: data.userId
         });
-        
+
     } catch (error) {
         console.error('❌ 데이터 조회 실패:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: '데이터 조회 실패', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: '데이터 조회 실패',
+            error: error.message
         });
     }
 });
@@ -331,7 +332,7 @@ app.get('/verify-token', async (req, res) => {
             success: true,
             uid,
             message: '토큰 검증 성공했습니다!!',
-            redirectUrl: `${baseUrl}/save-uid?uid=${uid}&amount=100`
+            redirectUrl: `${baseUrl}/save-uid?uid=${uid}`
         });
     } catch (err) {
         console.error('토큰 검증 오류:', err);
@@ -406,7 +407,6 @@ app.get('/payment-complete', async (req, res) => {
 
 app.get('/save-uid', async (req, res) => {
     const uidParam = req.query.uid;
-    const creditAmount = req.query.amount; // 유니티 결제용: amount 파라미터
 
     if (!uidParam) {
         return res.status(400).send('UID가 필요합니다.');
@@ -421,22 +421,10 @@ app.get('/save-uid', async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
         });
-
-        // amount 파라미터가 있으면 결제 페이지로, 없으면 일반 상점으로
-        if (creditAmount) {
-            console.log(`🎯 유니티에서 ${creditAmount} 크레딧 결제 요청`);
-            res.redirect(`/?amount=${creditAmount}`);
-        } else {
-            res.redirect('/');
-        }
+        res.redirect('/');
     } else {
         res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
     }
-
-    // res.redirect('/');
-    // } else {
-    //     res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
-    // }
 });
 
 app.get('/login', (req, res) => {
@@ -451,7 +439,6 @@ app.get('/login', (req, res) => {
 
 app.get('/', async (req, res) => {
     const uid = req.cookies?.uid;
-    const requestedAmount = req.query.amount; // URL 파라미터에서 amount 가져오기
 
     if (!uid) {
         return res.sendFile(path.join(__dirname, '../public/login.html'));
@@ -478,21 +465,10 @@ app.get('/', async (req, res) => {
             `<script>
                 const nickname = '${nickname.replace(/'/g, "\\'")}';
                 const uid = '${uid.replace(/'/g, "\\'")}';
-                const requestedAmount = '${requestedAmount || ''}'; // 요청된 크레딧 양
-
                 sessionStorage.setItem('userId', nickname);
                 sessionStorage.setItem('userUid', uid);
-                sessionStorage.setItem('requestedAmount', requestedAmount);
-
                 const userIdElement = document.getElementById('user-id');
                 if (userIdElement) userIdElement.textContent = nickname;
-                
-                // 🎯 유니티에서 요청한 크레딧이 있으면 자동 결제 실행
-                if (requestedAmount && requestedAmount !== '') {
-                    console.log('🎮 유니티에서 요청한 크레딧:', requestedAmount);
-                    // DOM 로드 후 자동 결제 실행
-                    setTimeout(autoPayment, 1000);
-                }
             </script></body>`
         );
 
@@ -561,20 +537,20 @@ app.post('/iamport-webhook', (req, res) => {
 // 에러 처리
 app.use((err, req, res, next) => {
     console.error('서버 에러:', err);
-    res.status(500).json({ 
-        success: false, 
+    res.status(500).json({
+        success: false,
         message: '서버 내부 오류가 발생했습니다.',
-        error: err.message 
+        error: err.message
     });
 });
 
 // 404 처리 - 맨 마지막에 위치
 app.use((req, res) => {
     console.log('❌ 404 - 찾을 수 없는 경로:', req.path);
-    res.status(404).json({ 
-        success: false, 
+    res.status(404).json({
+        success: false,
         message: '페이지를 찾을 수 없습니다.',
-        path: req.path 
+        path: req.path
     });
 });
 
