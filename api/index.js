@@ -4,7 +4,6 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const querystring = require('querystring');
 const axios = require('axios');
-const fs = require("fs");
 require('dotenv').config();
 
 const app = express();
@@ -36,35 +35,24 @@ let firebaseInitialized = false;
 
 try {
     admin = require('firebase-admin');
-
+    
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-
-        try {
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-            console.log('✅ JSON 파싱 성공');
-            console.log('🔑 프로젝트 ID:', serviceAccount.project_id);
-            console.log('🔑 클라이언트 이메일:', serviceAccount.client_email);
-
-            if (!admin.apps.length) {
-                admin.initializeApp({
-                    credential: admin.credential.cert(serviceAccount),
-                    databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
-                });
-                firebaseInitialized = true;
-                console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
-            }
-        } catch (parseError) {
-            console.error('❌ JSON 파싱 오류:', parseError.message);
-            console.log('🔍 환경변수 시작 부분:', process.env.FIREBASE_SERVICE_ACCOUNT.substring(0, 100));
+        
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
+            });
+            firebaseInitialized = true;
+            console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
         }
     } else {
-        console.log('⚠️ FIREBASE_SERVICE_ACCOUNT 환경변수 없음');
         // 로컬 개발환경용 - JSON 파일 사용
         try {
             const serviceAccount = require('../eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
-
+            
             if (!admin.apps.length) {
                 admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount),
@@ -79,7 +67,6 @@ try {
     }
 } catch (error) {
     console.error('❌ Firebase 초기화 오류:', error.message);
-    console.error('❌ 전체 스택:', error.stack);
     console.log('💡 Firebase 기능은 비활성화됩니다.');
 }
 
@@ -94,12 +81,14 @@ function generateTempToken() {
 // 임시 사용자 확인 함수 (Firebase 없이)
 async function checkUserExists(uid) {
     if (!firebaseInitialized) {
-        console.error('❌ Firebase가 초기화되지 않았습니다.');
-        return { userExists: false, userdata: [] };
-    }
-    if (!uid) { // 디버깅용
-        console.error('❌ UID가 제공되지 않았습니다.');
-        return { userExists: false, userdata: [] };
+        console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
+        return {
+            userExists: true,
+            userdata: [{
+                nickname: `TestUser_${uid.substring(0, 6)}`,
+                uid: uid
+            }]
+        };
     }
 
     try {
@@ -115,7 +104,7 @@ async function checkUserExists(uid) {
 
         const userData = userdata.docs[0].data();
         console.log('✅ Firebase에서 사용자 찾음:', userData.nickname);
-
+        
         return {
             userExists: true,
             userdata: [userData]
@@ -166,46 +155,46 @@ function validateUserId(userId) { return true; }
 app.post('/store-payment-data', (req, res) => {
     try {
         console.log('💾 결제 데이터 저장 요청:', req.body);
-
+        
         const { paymentData, userId } = req.body;
-
+        
         if (!paymentData || !userId) {
-            return res.status(400).json({
-                success: false,
-                message: '필수 데이터가 누락되었습니다.'
+            return res.status(400).json({ 
+                success: false, 
+                message: '필수 데이터가 누락되었습니다.' 
             });
         }
-
+        
         // 임시 토큰 생성
         const tempToken = generateTempToken();
-
+        
         // 데이터를 임시 저장 (5분 후 자동 삭제)
-        tempDataStore.set(tempToken, {
-            paymentData,
-            userId,
-            timestamp: Date.now()
+        tempDataStore.set(tempToken, { 
+            paymentData, 
+            userId, 
+            timestamp: Date.now() 
         });
-
+        
         // 5분 후 데이터 삭제
         setTimeout(() => {
             tempDataStore.delete(tempToken);
             console.log('🗑️ 토큰 만료로 삭제:', tempToken);
         }, 5 * 60 * 1000); // 5분
-
+        
         console.log('✅ 결제 데이터 임시 저장 완료:', tempToken);
-
+        
         res.json({
             success: true,
             tempToken: tempToken,
             redirectUrl: `/success?token=${tempToken}`
         });
-
+        
     } catch (error) {
         console.error('❌ 데이터 저장 실패:', error);
-        res.status(500).json({
-            success: false,
-            message: '데이터 저장 실패',
-            error: error.message
+        res.status(500).json({ 
+            success: false, 
+            message: '데이터 저장 실패', 
+            error: error.message 
         });
     }
 });
@@ -214,43 +203,43 @@ app.get('/get-payment-data/:token', (req, res) => {
     try {
         const { token } = req.params;
         console.log('🔍 토큰으로 데이터 조회:', token);
-
+        
         const data = tempDataStore.get(token);
-
+        
         if (!data) {
             console.log('❌ 토큰에 해당하는 데이터 없음:', token);
-            return res.status(404).json({
-                success: false,
-                message: '데이터를 찾을 수 없거나 만료되었습니다.'
+            return res.status(404).json({ 
+                success: false, 
+                message: '데이터를 찾을 수 없거나 만료되었습니다.' 
             });
         }
-
+        
         // 5분 경과 확인
         if (Date.now() - data.timestamp > 5 * 60 * 1000) {
             tempDataStore.delete(token);
             console.log('⏰ 토큰 만료:', token);
-            return res.status(404).json({
-                success: false,
-                message: '데이터가 만료되었습니다.'
+            return res.status(404).json({ 
+                success: false, 
+                message: '데이터가 만료되었습니다.' 
             });
         }
-
+        
         // 한 번 조회 후 삭제 (보안)
         tempDataStore.delete(token);
         console.log('✅ 데이터 조회 성공, 토큰 삭제:', token);
-
+        
         res.json({
             success: true,
             paymentData: data.paymentData,
             userId: data.userId
         });
-
+        
     } catch (error) {
         console.error('❌ 데이터 조회 실패:', error);
-        res.status(500).json({
-            success: false,
-            message: '데이터 조회 실패',
-            error: error.message
+        res.status(500).json({ 
+            success: false, 
+            message: '데이터 조회 실패', 
+            error: error.message 
         });
     }
 });
@@ -315,10 +304,16 @@ app.get('/verify-token', async (req, res) => {
     }
 
     if (!firebaseInitialized) {
-        console.error('❌ Firebase가 초기화되지 않았습니다.');
-        return res.status(500).json({
-            success: false,
-            message: 'Firebase 연결 오류 - 관리자에게 문의하세요.'
+        const testUid = 'test_' + Date.now();
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        const host = req.headers['x-forwarded-host'] || req.get('host');
+        const baseUrl = `${protocol}://${host}`;
+
+        return res.json({
+            success: true,
+            uid: testUid,
+            message: '토큰 검증 성공 (테스트 모드)',
+            redirectUrl: `${baseUrl}/save-uid?uid=${testUid}`
         });
     }
 
@@ -327,13 +322,6 @@ app.get('/verify-token', async (req, res) => {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         const uid = decodedToken.uid;
         const result = await checkUserExists(uid);
-
-        if (!result.userExists) {
-            return res.status(404).json({
-                success: false,
-                message: '등록되지 않은 사용자입니다.'
-            });
-        }
 
         const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
         const host = req.headers['x-forwarded-host'] || req.get('host');
@@ -418,31 +406,23 @@ app.get('/payment-complete', async (req, res) => {
 
 app.get('/save-uid', async (req, res) => {
     const uidParam = req.query.uid;
-    console.log('🔍 save-uid 요청 - UID:', uidParam);
 
-    try {
-        if (firebaseInitialized) {
-            // Firebase가 활성화된 경우 정상 처리
-            const result = await checkUserExists(uidParam);
-            console.log("✅ 세이브 uid의 리절트 값:", JSON.stringify(result, null, 2));
+    if (!uidParam) {
+        return res.status(400).send('UID가 필요합니다.');
+    }
 
-            if (result.userExists) {
-                console.log('✅ 사용자 존재 확인, 쿠키 설정 및 리다이렉트');
-                res.cookie('uid', uidParam, {
-                    path: '/',
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax'
-                });
-                res.redirect('/');
-            } else {
-                console.log('❌ 사용자를 찾을 수 없음:', uidParam);
-                res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
-            }
-        }
-    } catch (error) {
-        console.error('❌ save-uid 처리 중 오류:', error);
-        res.status(500).send('서버 오류가 발생했습니다.');
+    const result = await checkUserExists(uidParam);
+
+    if (result.userExists) {
+        res.cookie('uid', uidParam, {
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        });
+        res.redirect('/');
+    } else {
+        res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
     }
 });
 
@@ -459,15 +439,14 @@ app.get('/login', (req, res) => {
 app.get('/', async (req, res) => {
     const uid = req.cookies?.uid;
 
-    if (!uid) return res.sendFile(path.join(__dirname, '../public/login.html'));
-
-    if (!firebaseInitialized) {
-        console.error('❌ Firebase가 초기화되지 않았습니다.');
+    if (!uid) {
         return res.sendFile(path.join(__dirname, '../public/login.html'));
     }
 
     const result = await checkUserExists(uid);
-    if (!result.userExists) return res.sendFile(path.join(__dirname, '../public/login.html'));
+    if (!result.userExists) {
+        return res.sendFile(path.join(__dirname, '../public/login.html'));
+    }
 
     const nickname = result.userdata[0]?.nickname || 'unknown';
 
@@ -494,7 +473,6 @@ app.get('/', async (req, res) => {
 
         res.send(modifiedHtml);
     });
-
 });
 
 app.get('/success', (req, res) => {
@@ -558,20 +536,20 @@ app.post('/iamport-webhook', (req, res) => {
 // 에러 처리
 app.use((err, req, res, next) => {
     console.error('서버 에러:', err);
-    res.status(500).json({
-        success: false,
+    res.status(500).json({ 
+        success: false, 
         message: '서버 내부 오류가 발생했습니다.',
-        error: err.message
+        error: err.message 
     });
 });
 
 // 404 처리 - 맨 마지막에 위치
 app.use((req, res) => {
     console.log('❌ 404 - 찾을 수 없는 경로:', req.path);
-    res.status(404).json({
-        success: false,
+    res.status(404).json({ 
+        success: false, 
         message: '페이지를 찾을 수 없습니다.',
-        path: req.path
+        path: req.path 
     });
 });
 

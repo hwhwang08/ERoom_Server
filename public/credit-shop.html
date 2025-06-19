@@ -284,7 +284,6 @@
 
         if (!uid) {
             alert('UID가 없습니다. 다시 로그인해주세요.');
-            window.location.href = '/login';
             return;
         }
 
@@ -302,26 +301,16 @@
 
                     console.log('✅ 사용자 이름:', currentUserName);
                     console.log('✅ 사용자 이메일:', currentUserEmail);
-                    // 사용자 닉네임 화면 출력
-                    document.getElementById('user-id').textContent = currentUserName;
                 } else {
                     console.log('해당 uid의 사용자 정보 없음');
-                    alert('등록되지 않은 사용자입니다. 다시 로그인해주세요.');
-                    window.location.href = '/test_login.html';
-                    return;
                 }
             } catch (error) {
                 console.error('❌ 사용자 정보 조회 실패:', error);
-                alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
-                window.location.href = '/test_login.html';
-                return;
             }
         } else {
-            // Firebase 연결 안됨 - 로그인 페이지로 리다이렉트
-            console.error('❌ Firebase가 연결되지 않았습니다.');
-            alert('시스템에 문제가 발생했습니다. 관리자에게 문의하세요.');
-            window.location.href = '/test_login.html';
-            return;
+            console.log('Firebase 비활성화 - 테스트 모드');
+            currentUserName = '테스트 사용자';
+            currentUserEmail = 'test@example.com';
         }
     });
 
@@ -439,36 +428,36 @@
             if(rsp.error_code) {
                 console.log('결제 실패/취소 처리');
                 console.log('상세 정보:', {
-                    imp_uid: rsp.imp_uid,
-                    merchant_uid: rsp.merchant_uid,
-                    error_code: rsp.error_code,
-                    error_msg: rsp.error_msg
-                });
+                imp_uid: rsp.imp_uid,
+                merchant_uid: rsp.merchant_uid,
+                error_code: rsp.error_code,
+                error_msg: rsp.error_msg
+            });
                 // 실제 에러 메시지가 있는 경우만 알림
                 if (rsp.error_msg) {
                     alert('결제 실패: ' + rsp.error_msg);
                 } else {
                     console.log('사용자 취소로 추정 - 알림 없음');
                 }
-                // } else if (!rsp.success) {
+            // } else if (!rsp.success) {
                 // 카카오페이용. 나이스페이할거면 주석처리할것
-                //     const iframes = document.querySelectorAll("iframe");
-                //     iframes.forEach(iframe => iframe.remove());
-                //     console.log('결제 실패/취소 처리');
-                //     console.log('상세 정보:', {
-                //         imp_uid: rsp.imp_uid,
-                //         merchant_uid: rsp.merchant_uid,
-                //         error_code: rsp.error_code,
-                //         error_msg: rsp.error_msg
-                //     });
-                //     // 실제 에러 메시지가 있는 경우만 알림
-                //     if (rsp.error_msg) {
-                //         alert('결제 실패: ' + rsp.error_msg);
-                //     } else {
-                //         console.log('사용자 취소로 추정 - 알림 없음');
-                //     }
+            //     const iframes = document.querySelectorAll("iframe");
+            //     iframes.forEach(iframe => iframe.remove());
+            //     console.log('결제 실패/취소 처리');
+            //     console.log('상세 정보:', {
+            //         imp_uid: rsp.imp_uid,
+            //         merchant_uid: rsp.merchant_uid,
+            //         error_code: rsp.error_code,
+            //         error_msg: rsp.error_msg
+            //     });
+            //     // 실제 에러 메시지가 있는 경우만 알림
+            //     if (rsp.error_msg) {
+            //         alert('결제 실패: ' + rsp.error_msg);
+            //     } else {
+            //         console.log('사용자 취소로 추정 - 알림 없음');
+            //     }
             } else if (rsp.imp_uid && rsp.merchant_uid) {
-                // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
+            // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
                 console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
                 sessionStorage.setItem('orderId', rsp.merchant_uid);
                 sessionStorage.setItem('amount', amount.toString());
