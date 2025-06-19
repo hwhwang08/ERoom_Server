@@ -243,28 +243,6 @@
             currentUserName = '테스트 사용자';
             currentUserEmail = 'test@example.com';
         }
-
-
-        // try {
-        //     const response = await fetch('/firebase-config');
-        //     const firebaseConfig = await response.json();
-        //
-        //     // console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
-        //
-        //     // databaseURL만 있어도 Firestore 연결 시도
-        //     // if (typeof firebase !== 'undefined' && firebaseConfig.databaseURL) {
-        //
-        //     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
-        //         firebase.initializeApp(firebaseConfig);
-        //         db = firebase.firestore();
-        //         firebaseInitialized = true;
-        //         console.log('✅ Firebase 클라이언트 초기화 성공');
-        //     } else {
-        //         console.warn('⚠️ Firebase 설정을 가져올 수 없음');
-        //     }
-        // } catch (error) {
-        //     console.error('❌ Firebase 초기화 오류:', error);
-        // }
     }
 
     // 아임포트 객체 초기화 (중복 선언 X)
@@ -471,15 +449,86 @@
         });
     }
 
-    // 크레딧 옵션 클릭 처리
-    document.querySelectorAll('.credit-option').forEach(option => {
-        option.addEventListener('click', function() {
-            // 선택 표시 처리
-            document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedOption = this;
+    // 스크립트 끝에 추가
+    // 자동 결제 함수 (유니티에서 호출)
+    function autoPayment() {
+        const requestedAmount = sessionStorage.getItem('requestedAmount');
+
+        if (!requestedAmount || requestedAmount === '') {
+            console.log('📝 요청된 크레딧이 없음 - 일반 모드');
+            return;
+        }
+
+        console.log('🎯 자동 결제 시작:', requestedAmount);
+
+        // 크레딧 옵션 매핑
+        const creditOptions = {
+            '100': { credit: '100', price: '1000', element: document.querySelector('[data-credit="100"]') },
+            '300': { credit: '300', price: '2700', element: document.querySelector('[data-credit="300"]') },
+            '500': { credit: '500', price: '4000', element: document.querySelector('[data-credit="500"]') },
+            '1000': { credit: '1000', price: '7500', element: document.querySelector('[data-credit="1000"]') },
+            '2000': { credit: '2000', price: '14000', element: document.querySelector('[data-credit="2000"]') },
+            '5000': { credit: '5000', price: '30000', element: document.querySelector('[data-credit="5000"]') }
+        };
+
+        const option = creditOptions[requestedAmount];
+
+        if (!option || !option.element) {
+            console.error('❌ 지원하지 않는 크레딧 옵션:', requestedAmount);
+            alert(`지원하지 않는 크레딧 옵션입니다: ${requestedAmount}\n지원 옵션: 100, 300, 500, 1000, 2000, 5000`);
+            return;
+        }
+
+        // 해당 옵션 자동 선택
+        selectedOption = option.element;
+
+        // 모든 옵션에서 selected 클래스 제거
+        document.querySelectorAll('.credit-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+
+        // 선택된 옵션에 selected 클래스 추가
+        selectedOption.classList.add('selected');
+
+        console.log(`✅ ${requestedAmount} 크레딧 옵션 자동 선택됨`);
+        console.log('💳 결제창 자동 실행...');
+
+        // 0.5초 후 결제창 자동 실행
+        setTimeout(() => {
+            requestpay();
+        }, 500);
+    }
+
+
+    // 기존 클릭 이벤트는 그대로 유지
+    document.addEventListener('DOMContentLoaded', function() {
+        // 크레딧 옵션 클릭 이벤트
+        document.querySelectorAll('.credit-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // 모든 옵션에서 selected 클래스 제거
+                document.querySelectorAll('.credit-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+
+                // 클릭한 옵션에 selected 클래스 추가
+                this.classList.add('selected');
+                selectedOption = this;
+
+                console.log('선택된 크레딧:', selectedOption.getAttribute('data-credit'));
+            });
         });
     });
+
+
+    // // 크레딧 옵션 클릭 처리
+    // document.querySelectorAll('.credit-option').forEach(option => {
+    //     option.addEventListener('click', function() {
+    //         // 선택 표시 처리
+    //         document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
+    //         this.classList.add('selected');
+    //         selectedOption = this;
+    //     });
+    // });
 </script>
 </body>
 </html>

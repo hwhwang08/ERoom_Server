@@ -223,29 +223,29 @@ function displayPaymentInfo(paymentInfo) {
         }
         
         // 각 필드에 데이터 표시
-        console.log('🎯 DOM 업데이트 시작');
-        
-        userIdEl.textContent = paymentInfo.userId || 'N/A';
-        console.log('✅ userId 설정됨:', userIdEl.textContent);
-        
-        orderIdEl.textContent = paymentInfo.orderId || 'N/A';
-        console.log('✅ orderId 설정됨:', orderIdEl.textContent);
-        
-        orderNameEl.textContent = paymentInfo.orderName || 'N/A';
-        console.log('✅ orderName 설정됨:', orderNameEl.textContent);
-        
-        const formattedAmount = paymentInfo.amount ? 
-            `${Number(paymentInfo.amount).toLocaleString()}원` : 'N/A';
-        amountEl.textContent = formattedAmount;
-        console.log('✅ amount 설정됨:', amountEl.textContent);
-        
-        methodEl.textContent = paymentInfo.method || 'N/A';
-        console.log('✅ method 설정됨:', methodEl.textContent);
-        
-        const formattedCredit = paymentInfo.creditAmount ? 
-            `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : 'N/A';
-        creditAmountEl.textContent = formattedCredit;
-        console.log('✅ creditAmount 설정됨:', creditAmountEl.textContent);
+        // console.log('🎯 DOM 업데이트 시작');
+        //
+        // userIdEl.textContent = paymentInfo.userId || 'N/A';
+        // console.log('✅ userId 설정됨:', userIdEl.textContent);
+        //
+        // orderIdEl.textContent = paymentInfo.orderId || 'N/A';
+        // console.log('✅ orderId 설정됨:', orderIdEl.textContent);
+        //
+        // orderNameEl.textContent = paymentInfo.orderName || 'N/A';
+        // console.log('✅ orderName 설정됨:', orderNameEl.textContent);
+        //
+        // const formattedAmount = paymentInfo.amount ?
+        //     `${Number(paymentInfo.amount).toLocaleString()}원` : 'N/A';
+        // amountEl.textContent = formattedAmount;
+        // console.log('✅ amount 설정됨:', amountEl.textContent);
+        //
+        // methodEl.textContent = paymentInfo.method || 'N/A';
+        // console.log('✅ method 설정됨:', methodEl.textContent);
+        //
+        // const formattedCredit = paymentInfo.creditAmount ?
+        //     `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : 'N/A';
+        // creditAmountEl.textContent = formattedCredit;
+        // console.log('✅ creditAmount 설정됨:', creditAmountEl.textContent);
         
         // 결제 정보 표시
         const paymentDetails = document.getElementById('paymentDetails');
