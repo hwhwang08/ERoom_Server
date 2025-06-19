@@ -85,6 +85,10 @@ async function checkUserExists(uid) {
         console.error('❌ Firebase가 초기화되지 않았습니다.');
         return { userExists: false, userdata: [] };
     }
+    if (!uid) { // 디버깅용
+        console.error('❌ UID가 제공되지 않았습니다.');
+        return { userExists: false, userdata: [] };
+    }
 
     try {
         console.log('🔍 Firebase에서 사용자 검색:', uid);
@@ -402,23 +406,28 @@ app.get('/payment-complete', async (req, res) => {
 
 app.get('/save-uid', async (req, res) => {
     const uidParam = req.query.uid;
+    console.log('🔍 save-uid 요청 - UID:', uidParam);
 
-    if (!uidParam) {
-        return res.status(400).send('UID가 필요합니다.');
-    }
+    try {
+        const result = await checkUserExists(uidParam);
+        console.log("✅ 세이브 uid의 리절트 값:", JSON.stringify(result, null, 2));
 
-    const result = await checkUserExists(uidParam);
-
-    if (result.userExists) {
-        res.cookie('uid', uidParam, {
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
-        });
-        res.redirect('/');
-    } else {
-        res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
+        if (result.userExists) {
+            console.log('✅ 사용자 존재 확인, 쿠키 설정 및 리다이렉트');
+            res.cookie('uid', uidParam, {
+                path: '/',
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax'
+            });
+            res.redirect('/');
+        } else {
+            console.log('❌ 사용자를 찾을 수 없음:', uidParam);
+            res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
+        }
+    } catch (error) {
+        console.error('❌ save-uid 처리 중 오류:', error);
+        res.status(500).send('서버 오류가 발생했습니다.');
     }
 });
 
