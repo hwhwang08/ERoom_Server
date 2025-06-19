@@ -143,6 +143,20 @@ async function verifyPayment(imp_uid) {
 
 function validateUserId(userId) { return true; }
 
+// 기존 라우트에 추가
+app.get('/firebase-config', (req, res) => {
+    res.json({
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    });
+});
+
 // 헬스체크 라우트
 app.get('/health', (req, res) => {
     console.log('🔍 Firebase 초기화 상태:', firebaseInitialized);
