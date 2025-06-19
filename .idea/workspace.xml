@@ -4,18 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="306d25a2-a304-45c4-b7e1-d83d7da25676" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/my_proj_t_test/api/iamport-webhook.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/payment-complete.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/payment-complete.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/purchase.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/purchase.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/save-uid.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/save-uid.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/success.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/success.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/verify-token.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/verify-token.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/api/verify-user-and-payment.js" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/api/verify-user-and-payment.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/my_proj_t_test/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/my_proj_t_test/package.json" afterDir="false" />
-    </list>
+    <list default="true" id="8aca55dd-9d2d-4322-8825-184d2ade93f4" name="변경" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -24,56 +13,75 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="JavaScript File" />
+        <option value="Class" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;,
-    &quot;assignee&quot;: &quot;hwhwang08&quot;
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "hwhwang08"
   }
-}</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/hwhwang08/ERoom_Server.git&quot;,
-    &quot;accountId&quot;: &quot;8b64fe74-079d-4d04-9d06-48b1223c41cd&quot;
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/hwhwang08/ERoom_Server.git",
+    "accountId": "8b64fe74-079d-4d04-9d06-48b1223c41cd"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
-  &quot;customColor&quot;: &quot;&quot;,
-  &quot;associatedIndex&quot;: 6
+  &quot;associatedIndex&quot;: 7
 }</component>
-  <component name="ProjectId" id="2ydH1ONNNvDo9uhOaBk0cDO6siq" />
+  <component name="ProjectId" id="2yY8m7F80r2Ql1kHaDgXj26IZcN" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Node.js.server.js.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/201-12/Documents/GitHub/ERoom_Server&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.1.1.1\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "JavaScript Debug.credit-shop.html.executor": "Run",
+    "JavaScript 디버그.credit-shop.html.executor": "Run",
+    "Node.js.server.js.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/201-12/Desktop/ERoom_Server_m/my_proj_t_test",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.1.2\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\201-12\Documents\GitHub\ERoom_Server\my_proj_t_test" />
-      <recent name="C:\Users\201-12\Documents\GitHub\ERoom_Server\my_proj_t_test\api" />
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\hwhwa\Desktop\coding\ERoom_Server\my_proj_t_test" />
+      <recent name="C:\Users\hwhwa\Desktop\coding\ERoom_Server\my_proj_t_test\src\main\docs" />
     </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\hwhwa\Desktop\coding\ERoom_Server\my_proj_t_test\src\main\docs\public" />
+      <recent name="C:\Users\hwhwa\Desktop\coding\ERoom_Server\my_proj_t_test" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="ERoom_Server" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="ERoom_Server" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -84,17 +92,19 @@
     </attachedChunks>
   </component>
   <component name="TaskManager">
-    <task active="true" id="Default" summary="Default task">
-      <changelist id="306d25a2-a304-45c4-b7e1-d83d7da25676" name="Changes" comment="" />
-      <created>1750157314060</created>
+    <task active="true" id="Default" summary="디폴트 작업">
+      <changelist id="8aca55dd-9d2d-4322-8825-184d2ade93f4" name="변경" comment="" />
+      <created>1750000301375</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1750157314060</updated>
-      <workItem from="1750157315238" duration="985000" />
-      <workItem from="1750162105530" duration="2000" />
-      <workItem from="1750205402140" duration="477000" />
-      <workItem from="1750207717237" duration="9845000" />
-      <workItem from="1750224049831" duration="16834000" />
+      <updated>1750000301375</updated>
+      <workItem from="1750000302449" duration="699000" />
+      <workItem from="1750001209751" duration="1157000" />
+      <workItem from="1750002395195" duration="14000" />
+      <workItem from="1750002572224" duration="3082000" />
+      <workItem from="1750153657670" duration="3513000" />
+      <workItem from="1750157185290" duration="44000" />
+      <workItem from="1750293026391" duration="298000" />
     </task>
     <servers />
   </component>
