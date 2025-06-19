@@ -119,6 +119,35 @@
     let paymentData = {};
 
     document.addEventListener('DOMContentLoaded', function() {
+        // URL에서 토큰 추출
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        if (!token) {
+            alert('잘못된 접근입니다.');
+            window.location.href = '/';
+            return;
+        }
+
+        // 토큰으로 데이터 조회
+        fetch(`/get-payment-data/${token}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 결제 정보 표시
+                    displayPaymentInfo(data.paymentData, data.userId);
+                } else {
+                    alert('결제 정보를 불러올 수 없습니다: ' + data.message);
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                console.error('❌ 데이터 조회 실패:', error);
+                alert('데이터 조회 실패');
+                window.location.href = '/';
+            });
+
+
         console.log('success.html 페이지 로드됨');
 
         // 1. POST 방식의 폼 데이터 읽기
@@ -174,6 +203,15 @@
                 else console.warn('크레딧 구매 정보 전송에 실패했습니다.');
             });
     });
+
+    function displayPaymentInfo(paymentData, userId) {
+        // 결제 정보를 화면에 표시
+        document.getElementById('user-id').textContent = userId;
+        document.getElementById('order-id').textContent = paymentData.orderId;
+        document.getElementById('amount').textContent = paymentData.amount + '원';
+        // ... 기타 정보 표시
+    }
+
 
     function confirmPayment(paymentKey, orderId, amount) {
         console.log('결제 확인 요청:', { paymentKey, orderId, amount });
