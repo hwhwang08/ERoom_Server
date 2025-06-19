@@ -150,7 +150,8 @@ app.get('/firebase-config', (req, res) => {
     console.log('AUTH_DOMAIN:', process.env.NEXT_FIREBASE_AUTH_DOMAIN ? '✅ 존재' : '❌ 없음');
     console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
 
-    const config = {
+    console.log('🎯 Firebase Config 전송:', Object.keys(config));
+    res.json({
         apiKey: process.env.NEXT_FIREBASE_API_KEY,
         authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN,
         databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -159,10 +160,7 @@ app.get('/firebase-config', (req, res) => {
         messagingSenderId: process.env.NEXT_FIREBASE_MESSAGING_SENDER_ID,
         appId: process.env.NEXT_FIREBASE_APP_ID,
         measurementId: process.env.NEXT_FIREBASE_MEASUREMENT_ID
-    };
-
-    console.log('🎯 Firebase Config 전송:', Object.keys(config));
-    res.json(config);
+    });
 
 });
 
