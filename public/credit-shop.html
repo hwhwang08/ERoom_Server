@@ -369,23 +369,32 @@
     // redirectToSuccessWithHttpData 함수를 이것으로 교체
     function redirectToSuccessWithHttpData(paymentData, userId) {
         console.log('💾 sessionStorage에 결제 정보 저장');
-        
+        console.log('📊 원본 paymentData:', paymentData);
+        console.log('👤 원본 userId:', userId);
+
         // sessionStorage에 결제 정보 저장 (브라우저 탭 종료시까지 유지)
         const paymentInfo = {
             userId: decodeURIComponent(userId),
-            orderId: paymentData.orderId,
-            amount: paymentData.amount,
-            orderName: paymentData.orderName,
-            method: paymentData.method,
-            creditAmount: paymentData.creditAmount,
+            orderId: paymentData.orderId || 'N/A',
+            amount: paymentData.amount || '0',
+            orderName: paymentData.orderName || 'N/A',
+            method: paymentData.method || 'N/A',
+            creditAmount: paymentData.creditAmount || '0',
             timestamp: Date.now() // 타임스탬프 추가
         };
-        
+
+        console.log('💿 저장할 paymentInfo:', paymentInfo);
+
         // sessionStorage에 저장
         sessionStorage.setItem('successPageData', JSON.stringify(paymentInfo));
-        
+
+        // 저장 확인
+        const savedData = sessionStorage.getItem('successPageData');
+        console.log('✅ 저장 확인:', savedData);
+
         // URL에는 민감정보 없이 단순 이동
         window.location.href = '/success';
+
     }
 
     function requestpay() {
