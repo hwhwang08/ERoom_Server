@@ -48,22 +48,6 @@ try {
             firebaseInitialized = true;
             console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
         }
-    } else {
-        // 로컬 개발환경용 - JSON 파일 사용
-        try {
-            const serviceAccount = require('../eroom-e6659-firebase-adminsdk-fbsvc-60b39b555b.json');
-
-            if (!admin.apps.length) {
-                admin.initializeApp({
-                    credential: admin.credential.cert(serviceAccount),
-                    databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
-                });
-                firebaseInitialized = true;
-                console.log('✅ Firebase Admin SDK 초기화 성공 (로컬 파일)');
-            }
-        } catch (err) {
-            console.warn('⚠️ 로컬 Firebase 서비스 계정 파일을 찾을 수 없습니다:', err.message);
-        }
     }
 } catch (error) {
     console.error('❌ Firebase 초기화 오류:', error.message);
