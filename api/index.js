@@ -4,7 +4,6 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const querystring = require('querystring');
 const axios = require('axios');
-require('@google-cloud/firestore');
 require('dotenv').config();
 
 const app = express();
