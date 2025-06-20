@@ -1,3 +1,4 @@
+
 {
   "name": "eroom-credit-shop",
   "version": "1.0.0",
@@ -10,19 +11,17 @@
     "test": "node api/index.js"
   },
   "dependencies": {
-    "@google-cloud/firestore": "^7.11.1",
-    "@grpc/grpc-js": "^1.10.9",
-    "@grpc/proto-loader": "^0.7.13",
+    "firebase-admin": "^12.1.0",
+    "@google-cloud/firestore": "^7.1.0",
+    "@grpc/grpc-js": "^1.9.0",
+    "@grpc/proto-loader": "^0.7.8",
+    "google-auth-library": "^9.6.3",
     "axios": "^1.10.0",
     "body-parser": "^2.2.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "firebase-admin": "^11.11.1",
-    "google-auth-library": "^9.14.1",
-    "google-gax": "^4.3.7",
-    "protobufjs": "^7.2.6"
+    "express": "^5.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"
