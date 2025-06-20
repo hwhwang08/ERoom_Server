@@ -35,14 +35,6 @@
       "dest": "/api/index.js"
     },
     {
-      "src": "/store-payment-data",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/get-payment-data/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
       "src": "/iamport-webhook",
       "dest": "/api/index.js"
     },
