@@ -1,6 +1,3 @@
-// 강제 참조하여 번들에 포함되도록 유도
-// !! 노드 모듈 재설치함
-import '@google-cloud/firestore';
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -31,14 +28,6 @@ const IMP_API_SECRET = process.env.IMP_SECRET;
 console.log('🚀 서버 시작 중...');
 console.log('📦 Express 로드 완료');
 console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
-
-try {
-    require('@google-cloud/firestore');
-    console.log('@google-cloud/firestore 모듈 로드 성공');
-} catch (e) {
-    console.error('@google-cloud/firestore 모듈 로드 실패:', e);
-}
-
 
 // Firebase 초기화 부분 수정
 let admin = null;
@@ -73,18 +62,9 @@ function generateTempToken() {
     return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// 임시 사용자 확인 함수 (Firebase 없이)
+// 사용자 확인 함수
 async function checkUserExists(uid) {
-    if (!firebaseInitialized) {
-        console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
-        return {
-            userExists: true,
-            userdata: [{
-                nickname: `TestUser_${uid.substring(0, 6)}`,
-                uid: uid
-            }]
-        };
-    }
+    if (!firebaseInitialized) console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
 
     try {
         console.log('🔍 Firebase에서 사용자 검색:', uid);
