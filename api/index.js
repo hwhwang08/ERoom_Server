@@ -29,6 +29,14 @@ console.log('🚀 서버 시작 중...');
 console.log('📦 Express 로드 완료');
 console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 
+try {
+    require('@google-cloud/firestore');
+    console.log('@google-cloud/firestore 모듈 로드 성공');
+} catch (e) {
+    console.error('@google-cloud/firestore 모듈 로드 실패:', e);
+}
+
+
 // Firebase 초기화 부분 수정
 let admin = null;
 let firebaseInitialized = false;
