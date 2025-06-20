@@ -4,6 +4,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const querystring = require('querystring');
 const axios = require('axios');
+require('@google-cloud/firestore');
 require('dotenv').config();
 
 const app = express();
@@ -115,8 +116,8 @@ function generateTempToken() {
     return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// 임시 사용자 확인 함수 (Firebase 없이)
 async function checkUserExists(uid) {
+    // 임시 사용자 확인 함수 (Firebase 없이)
     if (!firebaseInitialized) {
         console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
         return {
