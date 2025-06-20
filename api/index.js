@@ -390,10 +390,7 @@ app.get('/payment-complete', async (req, res) => {
 
 app.get('/save-uid', async (req, res) => {
     const uidParam = req.query.uid;
-
-    if (!uidParam) {
-        return res.status(400).send('UID가 필요합니다.');
-    }
+    console.log("들어온 uid값 확인용", uidParam)
 
     const result = await checkUserExists(uidParam);
 
