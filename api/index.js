@@ -1,4 +1,5 @@
 // 강제 참조하여 번들에 포함되도록 유도
+// !! 노드 모듈 재설치함
 import '@google-cloud/firestore';
 const express = require('express');
 const cors = require('cors');
