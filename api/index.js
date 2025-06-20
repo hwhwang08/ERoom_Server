@@ -1,3 +1,5 @@
+// 강제 참조하여 번들에 포함되도록 유도
+import '@google-cloud/firestore';
 const express = require('express');
 const cors = require('cors');
 const path = require('path');

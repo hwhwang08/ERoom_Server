@@ -65,6 +65,9 @@
   ],
   "functions": {
     "api/index.js": {
+      "includeFiles": [
+        "node_modules/@google-cloud/firestore/**/*"
+      ],
       "maxDuration": 30
     }
   }
