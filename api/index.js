@@ -64,16 +64,7 @@ function generateTempToken() {
 
 // 임시 사용자 확인 함수 (Firebase 없이)
 async function checkUserExists(uid) {
-    if (!firebaseInitialized) {
-        console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
-        return {
-            userExists: true,
-            userdata: [{
-                nickname: `TestUser_${uid.substring(0, 6)}`,
-                uid: uid
-            }]
-        };
-    }
+    if (!firebaseInitialized) console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
 
     try {
         console.log('🔍 Firebase에서 사용자 검색:', uid);
@@ -101,9 +92,7 @@ async function checkUserExists(uid) {
 
 // 아임포트 관련 함수들
 async function getToken() {
-    if (!IMP_API_KEY || !IMP_API_SECRET) {
-        throw new Error('아임포트 API 키가 설정되지 않음');
-    }
+    if (!IMP_API_KEY || !IMP_API_SECRET) throw new Error('아임포트 API 키가 설정되지 않음');
 
     const response = await axios.post('https://api.iamport.kr/users/getToken', {
         imp_key: IMP_API_KEY,
