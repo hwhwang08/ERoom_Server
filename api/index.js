@@ -35,14 +35,12 @@ let admin = require('firebase-admin');
 let firebaseInitialized = false;
 
 try {
-    // 주석은 전부 vercel용
+    // 로컬로 할거면 if주석처리
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
 
-        // const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, '\n'));
-        // const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         // \\n을 \n줄바꿈으로 바꾸는코드.
         // serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
 
@@ -70,9 +68,9 @@ function generateTempToken() {
     return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// 임시 사용자 확인 함수 (Firebase 없이)
 async function checkUserExists(uid) {
-    if (!firebaseInitialized) console.log('📝 Firebase 비활성화 - 임시 사용자 생성');
+    // 임시 사용자 확인 함수 (Firebase 없이)
+    if (firebaseInitialized) console.log('📝 Firebase 활성화.');
 
     try {
         console.log('🔍 Firebase에서 사용자 검색:', uid);
