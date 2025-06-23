@@ -63,3 +63,4 @@ server.key
 node_modules/
 
 eroom.json
+.vercel
