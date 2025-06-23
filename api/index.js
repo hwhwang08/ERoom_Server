@@ -39,7 +39,7 @@ try {
     // 주석은 전부 vercel용
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, '\n'));
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\n/g, '\n'));
         // const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         // \\n을 줄바꿈으로 바꾸는코드.
         // serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
