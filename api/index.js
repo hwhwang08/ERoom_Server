@@ -4,11 +4,10 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const querystring = require('querystring');
 const axios = require('axios');
-require('dotenv').config();
-require('@google-cloud/firestore');
-
 const app = express();
-
+// env파일불러오는 코드.
+// require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 // 미들웨어 설정
 app.use(cors({
     origin: '*',
@@ -37,10 +36,15 @@ let firebaseInitialized = false;
 try {
     admin = require('firebase-admin');
 
+    // 주석은 전부 vercel용
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        // \\n을 줄바꿈으로 바꾸는코드.
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
 
+        // 로컬환경
+        // const serviceAccount = require('../eroom.json');
         if (!admin.apps.length) {
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
