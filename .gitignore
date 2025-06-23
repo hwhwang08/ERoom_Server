@@ -61,3 +61,5 @@ server.key
 
 # Node.js
 node_modules/
+
+eroom.json
