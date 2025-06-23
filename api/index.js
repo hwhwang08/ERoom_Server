@@ -35,24 +35,27 @@ let admin;
 let firebaseInitialized = false;
 
 function getFirestore() {
-    admin = require('firebase-admin');
+    if (!admin) admin = require('firebase-admin');
+
     if (!admin.apps.length) {
-        console.log('🔑 Firebase 환경변수 찾음!');
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\n/g, '\n'));
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
-        });
-        firebaseInitialized = true;
-        console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
-    } else {
-        console.error('❌ Firebase 초기화 오류:', error.message);
-        console.log('💡 Firebase 기능은 비활성화됩니다.');
+        try {
+            console.log('🔑 Firebase 환경변수 찾음!');
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, '\n'));
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
+            });
+            firebaseInitialized = true;
+            console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
+        } catch (error) {
+            console.error('❌ Firebase 초기화 오류:', error.message);
+            console.log('💡 Firebase 기능은 비활성화됩니다.');
+        }
     }
+
     return admin.firestore();
 }
 getFirestore();
-
 // try {
 //     admin = require('firebase-admin');
 //
