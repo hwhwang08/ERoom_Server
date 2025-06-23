@@ -232,6 +232,7 @@ app.get('/firebase-config', (req, res) => {
         console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
 
         const config = {
+            service: JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)|| "ㅇ안돼",
             apiKey: process.env.NEXT_FIREBASE_API_KEY || "dummy-api-key",
             authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN || "dummy-auth-domain",
             databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
