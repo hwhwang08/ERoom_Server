@@ -31,12 +31,10 @@ console.log('📦 Express 로드 완료');
 console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 
 // Firebase 초기화 부분 수정
-let admin;
+let admin = require('firebase-admin');
 let firebaseInitialized = false;
 
 try {
-    admin = require('firebase-admin');
-
     // 주석은 전부 vercel용
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
