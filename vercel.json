@@ -1,58 +1,59 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 30
+  "builds": [
+    {
+      "src": "api/server.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/firebase-config",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/verify-token",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/verify-user-and-payment",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/purchase",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/payment-complete",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/save-uid",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/success",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/iamport-webhook",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/login",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/health",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     },
     {
       "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
@@ -64,7 +65,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.js"
+      "dest": "/api/server.js"
     }
   ],
   "installCommand": "npm install --legacy-peer-deps"
