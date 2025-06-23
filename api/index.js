@@ -34,54 +34,32 @@ console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 let admin;
 let firebaseInitialized = false;
 
-function getFirestore() {
-    if (!admin) admin = require('firebase-admin');
+try {
+    admin = require('firebase-admin');
 
-    if (!admin.apps.length) {
-        try {
-            console.log('🔑 Firebase 환경변수 찾음!');
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, '\n'));
+    // 주석은 전부 vercel용
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        console.log('🔑 Firebase 환경변수 찾음!');
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\n/g, '\n'));
+        // const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        // \\n을 줄바꿈으로 바꾸는코드.
+        // serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+
+        // 로컬환경
+        // const serviceAccount = require('../eroom.json');
+        if (!admin.apps.length) {
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
                 databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
             });
             firebaseInitialized = true;
             console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
-        } catch (error) {
-            console.error('❌ Firebase 초기화 오류:', error.message);
-            console.log('💡 Firebase 기능은 비활성화됩니다.');
         }
     }
-
-    return admin.firestore();
+} catch (error) {
+    console.error('❌ Firebase 초기화 오류:', error.message);
+    console.log('💡 Firebase 기능은 비활성화됩니다.');
 }
-getFirestore();
-// try {
-//     admin = require('firebase-admin');
-//
-//     // 주석은 전부 vercel용
-//     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-//         console.log('🔑 Firebase 환경변수 찾음!');
-//         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\n/g, '\n'));
-//         // const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-//         // \\n을 줄바꿈으로 바꾸는코드.
-//         // serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-//
-//         // 로컬환경
-//         // const serviceAccount = require('../eroom.json');
-//         if (!admin.apps.length) {
-//             admin.initializeApp({
-//                 credential: admin.credential.cert(serviceAccount),
-//                 databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
-//             });
-//             firebaseInitialized = true;
-//             console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
-//         }
-//     }
-// } catch (error) {
-//     console.error('❌ Firebase 초기화 오류:', error.message);
-//     console.log('💡 Firebase 기능은 비활성화됩니다.');
-// }
 
 // 임시 데이터 저장소 (메모리) - 맨 위로 이동
 const tempDataStore = new Map();
