@@ -4,7 +4,6 @@
   "description": "ERoom Credit Shop Server for Vercel",
   "main": "api/server.js",
   "scripts": {
-    "postinstall": "cd node_modules/@google-cloud/firestore && npm run build",
     "start": "node api/server.js",
     "dev": "nodemon api/server.js",
     "build": "echo 'Build complete'",
