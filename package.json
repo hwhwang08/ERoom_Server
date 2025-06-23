@@ -25,5 +25,8 @@
   },
   "engines": {
     "node": "18.0.0"
+  },
+  "overrides": {
+    "@google-cloud/firestore": "^7.11.1"
   }
 }

@@ -1,11 +1,13 @@
 {
   "version": 2,
-  "functions": {
-    "api/server.js": {
-      "runtime": "nodejs18.0.0"
+  "buildCommand": "npm install && npm run build",
+  "builds": [
+    {
+      "src": "api/server.js",
+      "use": "@vercel/node"
     }
-  },
-  "installCommand": "npm install --platform=linux --arch=x64",
+  ],
+  "installCommand": "npm install --legacy-peer-deps",
   "routes": [
     {
       "src": "/api/(.*)",
