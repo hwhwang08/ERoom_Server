@@ -5,12 +5,6 @@
       "runtime": "nodejs18.0.0"
     }
   },
-  "builds": [
-  {
-    "src": "api/server.js",
-    "use": "@vercel/node"
-  }
-],
   "installCommand": "npm install --platform=linux --arch=x64",
   "routes": [
     {
