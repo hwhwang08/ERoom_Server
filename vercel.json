@@ -1,15 +1,17 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/server.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": "node_modules/@google-cloud/**"
-      }
+  "functions": {
+    "api/server.js": {
+      "runtime": "nodejs18.0.0"
     }
-  ],
-  "installCommand": "npm ci --production=false",
+  },
+  "builds": [
+  {
+    "src": "api/server.js",
+    "use": "@vercel/node"
+  }
+],
+  "installCommand": "npm install --platform=linux --arch=x64",
   "routes": [
     {
       "src": "/api/(.*)",
