@@ -4,10 +4,9 @@
   "description": "ERoom Credit Shop Server for Vercel",
   "main": "api/index.js",
   "scripts": {
-    "vercel-build": "node -e \"require('@google-cloud/firestore')\"",
+    "build": "node -e \"require('@google-cloud/firestore')\" && echo '✅ Firebase 준비됨'",
     "start": "node api/index.js",
     "dev": "nodemon api/index.js",
-    "build": "echo 'Build complete'",
     "test": "node api/index.js"
   },
   "dependencies": {
