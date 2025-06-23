@@ -8,6 +8,8 @@ const app = express();
 // env파일불러오는 코드.
 // require('dotenv').config();
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('@google-cloud/firestore'); // 설치 안되서 테스트용
+
 // 미들웨어 설정
 app.use(cors({
     origin: '*',
@@ -529,6 +531,10 @@ app.use((req, res) => {
     });
 });
 
+
+console.log(`🔥 Firebase: ${firebaseInitialized ? '활성화' : '비활성화 (테스트 모드)'}`);
+console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
+
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
 
@@ -538,7 +544,5 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
         console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
-        console.log(`🔥 Firebase: ${firebaseInitialized ? '활성화' : '비활성화 (테스트 모드)'}`);
-        console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
     });
 }
