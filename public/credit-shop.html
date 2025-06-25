@@ -11,7 +11,6 @@
     <!--파베라이브러리불러오기-->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- firebase-config.js 제거 -->
     <title>결제창</title>
     <!-- 기존 스타일 유지 -->
     <style>
@@ -154,31 +153,26 @@
             <div class="credit-amount">100 크레딧</div>
             <div class="credit-price">1,000원</div>
         </div>
-
         <div class="credit-option" data-credit="300" data-price="2700">
             <div class="credit-amount">300 크레딧</div>
             <div class="credit-price">2,700원</div>
             <div class="credit-bonus">10% 추가 적립</div>
         </div>
-
         <div class="credit-option most-popular" data-credit="500" data-price="4000">
             <div class="credit-amount">500 크레딧</div>
             <div class="credit-price">4,000원</div>
             <div class="credit-bonus">20% 추가 적립</div>
         </div>
-
         <div class="credit-option" data-credit="1000" data-price="7500">
             <div class="credit-amount">1,000 크레딧</div>
             <div class="credit-price">7,500원</div>
             <div class="credit-bonus">25% 추가 적립</div>
         </div>
-
         <div class="credit-option" data-credit="2000" data-price="14000">
             <div class="credit-amount">2,000 크레딧</div>
             <div class="credit-price">14,000원</div>
             <div class="credit-bonus">30% 추가 적립</div>
         </div>
-
         <div class="credit-option" data-credit="5000" data-price="30000">
             <div class="credit-amount">5,000 크레딧</div>
             <div class="credit-price">30,000원</div>
@@ -197,74 +191,30 @@
         try {
             console.log('🔥 Firebase 초기화 시작...');
 
+            // server.js의 /firebase-config와 연결되는 라우터. 응답 상태 확인
             const response = await fetch('/firebase-config');
-
-            // 응답 상태 확인
-            if (!response.ok) {
-                console.warn(`⚠️ Firebase config 응답 오류: ${response.status}`);
-                // 에러 상황에서도 계속 진행 (테스트 모드)
-                console.log('📝 Firebase 비활성화 - 테스트 모드로 진행');
-                return;
-            }
+            if (!response.ok) return console.warn(`⚠️ Firebase config 응답 오류: ${response.status}`);
 
             // Content-Type 확인
             const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                console.warn('⚠️ Firebase config가 JSON이 아님:', contentType);
-                console.log('📝 Firebase 비활성화 - 테스트 모드로 진행');
-                return;
-            }
-
-            const firebaseConfig = await response.json();
+            if (!contentType || !contentType.includes('application/json')) return console.warn('⚠️ Firebase config가 JSON이 아님:', contentType);
 
             // 유효한 설정인지 확인
-            if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'dummy-api-key') {
-                console.warn('⚠️ Firebase 설정이 더미 값입니다.');
-                console.log('📝 Firebase 비활성화 - 테스트 모드로 진행');
-                return;
-            }
+            const firebaseConfig = await response.json();
+            if (!firebaseConfig.apiKey) return console.warn('⚠️ Firebase 설정이 더미 값입니다.');
 
-            // Firebase 초기화
-            if (typeof firebase !== 'undefined') {
+            // Firebase 라이브러리가 제대로 불러와졌는지 확인
+            // firebase는 외부에서 가져오는 변수명.
+            if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 firebaseInitialized = true;
                 console.log('✅ Firebase 클라이언트 초기화 성공');
-            } else {
-                console.warn('⚠️ Firebase SDK를 찾을 수 없음');
-            }
-
+            } else console.warn('⚠️ Firebase SDK를 찾을 수 없음');
         } catch (error) {
             console.error('❌ Firebase 초기화 오류:', error);
-            console.log('📝 Firebase 비활성화 - 테스트 모드로 계속 진행');
-
-            // Firebase 없이도 계속 진행
             firebaseInitialized = false;
-            currentUserName = '테스트 사용자';
-            currentUserEmail = 'test@example.com';
         }
-
-
-        // try {
-        //     const response = await fetch('/firebase-config');
-        //     const firebaseConfig = await response.json();
-        //
-        //     // console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
-        //
-        //     // databaseURL만 있어도 Firestore 연결 시도
-        //     // if (typeof firebase !== 'undefined' && firebaseConfig.databaseURL) {
-        //
-        //     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
-        //         firebase.initializeApp(firebaseConfig);
-        //         db = firebase.firestore();
-        //         firebaseInitialized = true;
-        //         console.log('✅ Firebase 클라이언트 초기화 성공');
-        //     } else {
-        //         console.warn('⚠️ Firebase 설정을 가져올 수 없음');
-        //     }
-        // } catch (error) {
-        //     console.error('❌ Firebase 초기화 오류:', error);
-        // }
     }
 
     // 아임포트 객체 초기화 (중복 선언 X)
@@ -285,30 +235,26 @@
         console.log('크샵 유아이디 값:', uid);
         console.log('선택된 크레딧:', selectedCredit);
 
-        if (!uid) {
-            alert('UID가 없습니다. 다시 로그인해주세요.');
-            return;
-        }
+        if (!uid) return window.location.href = '/login';
 
         // Firebase가 초기화된 경우에만 사용자 정보 조회
         if (firebaseInitialized && db) {
             try {
-                const snapshot = await db.collection('user_Datas')
-                    .where('uid', '==', uid)
-                    .get();
+                const snapshot = await db.collection('user_Datas').where('uid','==',uid).get();
 
                 if (!snapshot.empty) {
                     const userData = snapshot.docs[0].data();
-                    currentUserEmail = userData.email || '';
-                    currentUserName = userData.nickname || '사용자';
+                    currentUserEmail = userData.email;
+                    currentUserName = userData.nickname;
+                    document.getElementById('user-id').textContent = currentUserName;
 
                     console.log('✅ 사용자 이름:', currentUserName);
                     console.log('✅ 사용자 이메일:', currentUserEmail);
-                } else console.log('해당 uid의 사용자 정보 없음');
+                } else window.location.href = '/login';
             } catch (error) {
                 console.error('❌ 사용자 정보 조회 실패:', error);
             }
-        } else console.log('Firebase 비활성화됨. 크샵이');
+        } else alert('Firebase 비활성화됨. 크샵이');
 
         // 특정 크레딧이 선택된 경우 자동으로 해당 옵션 선택 및 결제 진행
         if (selectedCredit && selectedCredit !== 'null') {
@@ -366,11 +312,8 @@
                 console.error('서버 통신 실패:', xhr.responseText);
 
                 // 401 Unauthorized 처리
-                if (xhr.status === 401) {
-                    alert('인증 실패: Authorization 헤더가 유효하지 않습니다.');
-                } else {
-                    alert('서버 통신 실패: ' + error);
-                }
+                if (xhr.status === 401) alert('인증 실패: Authorization 헤더가 유효하지 않습니다.');
+                else alert('서버 통신 실패: ' + error);
             }
         });
     }
@@ -407,11 +350,9 @@
 
     }
 
+    // 구매하기 버튼 누르면 실행됨
     function requestpay() {
-        if (!selectedOption) {
-            alert("상품을 선택해주세요!");
-            return;
-        }
+        if (!selectedOption) return alert("상품을 선택해주세요!");
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
         const amount = parseInt(selectedOption.getAttribute('data-price'));
 
@@ -427,45 +368,23 @@
             buyer_name: currentUserName,
         }, function (rsp) {
             console.log('=== 아임포트 응답 전체 ===');
-            console.log(rsp);
-            console.log('imp_uid:', rsp.imp_uid);
-            console.log('merchant_uid:', rsp.merchant_uid);
+            console.log('포트사 거래번호:', rsp.imp_uid);
+            console.log('고객사거래번호:', rsp.merchant_uid);
             console.log('성공여부:', rsp.success);
             console.log('실패여부:', rsp.error_code);
+            // pg사 마다 성공실패 여부 보내는게 다르기도 하고 테스트 결제는 안보내는 경우도 있음.(나이스가그럼. 안보내서 undifined임)
             console.log('rsp 여부:', rsp);
             console.log('========================');
 
             if(rsp.error_code) {
                 console.log('결제 실패/취소 처리');
-                console.log('상세 정보:', {
-                imp_uid: rsp.imp_uid,
-                merchant_uid: rsp.merchant_uid,
-                error_code: rsp.error_code,
-                error_msg: rsp.error_msg
-            });
-                // 실제 에러 메시지가 있는 경우만 알림
-                if (rsp.error_msg) {
-                    alert('결제 실패: ' + rsp.error_msg);
-                } else {
-                    console.log('사용자 취소로 추정 - 알림 없음');
-                }
+                console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
             // } else if (!rsp.success) {
-                // 카카오페이용. 나이스페이할거면 주석처리할것
+            //     // 카카오페이용. 나이스페이할거면 주석처리할것
             //     const iframes = document.querySelectorAll("iframe");
             //     iframes.forEach(iframe => iframe.remove());
             //     console.log('결제 실패/취소 처리');
-            //     console.log('상세 정보:', {
-            //         imp_uid: rsp.imp_uid,
-            //         merchant_uid: rsp.merchant_uid,
-            //         error_code: rsp.error_code,
-            //         error_msg: rsp.error_msg
-            //     });
-            //     // 실제 에러 메시지가 있는 경우만 알림
-            //     if (rsp.error_msg) {
-            //         alert('결제 실패: ' + rsp.error_msg);
-            //     } else {
-            //         console.log('사용자 취소로 추정 - 알림 없음');
-            //     }
+            //     console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
             } else if (rsp.imp_uid && rsp.merchant_uid) {
             // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
                 console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
