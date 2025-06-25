@@ -280,7 +280,10 @@
         await initializeFirebase();
 
         const uid = sessionStorage.getItem('userUid'); // 서버에서 전달한 UID
+        const selectedCredit = sessionStorage.getItem('selectedCredit');
+
         console.log('크샵 유아이디 값:', uid);
+        console.log('선택된 크레딧:', selectedCredit);
 
         if (!uid) {
             alert('UID가 없습니다. 다시 로그인해주세요.');
@@ -301,16 +304,32 @@
 
                     console.log('✅ 사용자 이름:', currentUserName);
                     console.log('✅ 사용자 이메일:', currentUserEmail);
-                } else {
-                    console.log('해당 uid의 사용자 정보 없음');
-                }
+                } else console.log('해당 uid의 사용자 정보 없음');
             } catch (error) {
                 console.error('❌ 사용자 정보 조회 실패:', error);
             }
-        } else {
-            console.log('Firebase 비활성화 - 테스트 모드');
-            currentUserName = '테스트 사용자';
-            currentUserEmail = 'test@example.com';
+        } else console.log('Firebase 비활성화됨. 크샵이');
+
+        // ????? 추가된거!!!!
+
+        // 특정 크레딧이 선택된 경우 자동으로 해당 옵션 선택 및 결제 진행
+        if (selectedCredit && selectedCredit !== 'null') {
+            const targetOption = document.querySelector(`[data-credit="${selectedCredit}"]`);
+            if (targetOption) {
+                // 옵션 선택
+                document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
+                targetOption.classList.add('selected');
+                selectedOption = targetOption;
+
+                // 잠깐 대기 후 자동으로 결제 진행
+                setTimeout(() => {
+                    console.log(`${selectedCredit} 크레딧 자동 결제 시작`);
+                    requestpay();
+                }, 1000); // 1초 대기 후 결제창 실행
+            }
+
+            // sessionStorage에서 selectedCredit 제거 (한 번만 사용)
+            sessionStorage.removeItem('selectedCredit');
         }
     });
 
