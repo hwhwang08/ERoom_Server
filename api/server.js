@@ -5,8 +5,17 @@ const cookieParser = require('cookie-parser');
 const querystring = require('querystring');
 const axios = require('axios');
 const app = express();
+// 로컬테스트용 https
+// const https = require('https');
+const fs = require('fs');
+
+// 로컬 테스트용
+// const options = {
+//     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
+//     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
+// };
+
 // env파일불러오는 코드.
-// require('dotenv').config();
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 // 미들웨어 설정
@@ -39,13 +48,12 @@ try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-
         // \\n을 \n줄바꿈으로 바꾸는코드.
-        // serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
 
         // 로컬환경
         // const serviceAccount = require('../eroom.json');
+
         if (!admin.apps.length) {
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
@@ -283,19 +291,7 @@ app.get('/verify-token', async (req, res) => {
         });
     }
 
-    if (!firebaseInitialized) {
-        const testUid = 'test_' + Date.now();
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        const host = req.headers['x-forwarded-host'] || req.get('host');
-        const baseUrl = `${protocol}://${host}`;
-
-        return res.json({
-            success: true,
-            uid: testUid,
-            message: '토큰 검증 성공 (테스트 모드)',
-            redirectUrl: `${baseUrl}/save-uid?uid=${testUid}`
-        });
-    }
+    if (!firebaseInitialized) console.log('파베 인식 안됨');
 
     const idToken = authHeader.split('Bearer ')[1].trim();
     try {
@@ -310,7 +306,7 @@ app.get('/verify-token', async (req, res) => {
         res.json({
             success: true,
             uid,
-            message: '토큰 검증 성공했습니다!!',
+            message: '서버에서 응답!! 토큰 검증 성공!!',
             redirectUrl: `${baseUrl}/save-uid?uid=${uid}`
         });
     } catch (err) {
@@ -386,7 +382,10 @@ app.get('/payment-complete', async (req, res) => {
 
 app.get('/save-uid', async (req, res) => {
     const uidParam = req.query.uid;
-    console.log("들어온 uid값 확인용", uidParam)
+    const creditParam = req.query.credit;
+
+    console.log("들어온 uid값 확인용", uidParam);
+    console.log("들어온 크레딧값 확인용", creditParam);
 
     const result = await checkUserExists(uidParam);
 
@@ -397,7 +396,13 @@ app.get('/save-uid', async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
         });
-        res.redirect('/');
+        // 크레딧 파라미터가 있으면 URL에 추가해서 리다이렉트
+        let redirectUrl = '/';
+        if (creditParam) {
+            redirectUrl += `?credit=${creditParam}`;
+        }
+        console.log("!!! url확인용", redirectUrl);
+        res.redirect(redirectUrl);
     } else {
         res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
     }
@@ -415,19 +420,15 @@ app.get('/login', (req, res) => {
 
 app.get('/', async (req, res) => {
     const uid = req.cookies?.uid;
+    const creditParam = req.query.credit; // URL에서 크레딧 파라미터 가져오기
+    console.log("uid랑 크레딧 값 확인", uid, creditParam)
 
-    if (!uid) {
-        return res.sendFile(path.join(__dirname, '../public/login.html'));
-    }
+    if (!uid) return res.sendFile(path.join(__dirname, '../public/login.html'));
 
     const result = await checkUserExists(uid);
-    if (!result.userExists) {
-        return res.sendFile(path.join(__dirname, '../public/login.html'));
-    }
+    if (!result.userExists) return res.sendFile(path.join(__dirname, '../public/login.html'));
 
-    const nickname = result.userdata[0]?.nickname || 'unknown';
-
-    const fs = require('fs');
+    const nickname = result.userdata[0]?.nickname || '익명';
     const htmlPath = path.join(__dirname, '../public/credit-shop.html');
 
     fs.readFile(htmlPath, 'utf8', (err, data) => {
@@ -441,8 +442,10 @@ app.get('/', async (req, res) => {
             `<script>
                 const nickname = '${nickname.replace(/'/g, "\\'")}';
                 const uid = '${uid.replace(/'/g, "\\'")}';
+                const selectedCredit = ${creditParam || 'null'};
                 sessionStorage.setItem('userId', nickname);
                 sessionStorage.setItem('userUid', uid);
+                sessionStorage.setItem('selectedCredit', selectedCredit);
                 const userIdElement = document.getElementById('user-id');
                 if (userIdElement) userIdElement.textContent = nickname;
             </script></body>`
@@ -537,7 +540,15 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
 
+
 // 로컬 개발용
+// https.createServer(options, app).listen(PORT, () => {
+    // const PORT = 7999;
+//     console.log(`✅ HTTPS 서버 실행 중: https://localhost:${PORT}`);
+//     console.log(`🔍 헬스체크: https://localhost:${PORT}/health`);
+// });
+
+// || 3000은 로컬 개발용
 if (require.main === module) {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
