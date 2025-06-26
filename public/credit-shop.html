@@ -284,9 +284,9 @@
             creditAmount: selectedOption.getAttribute('data-credit')
         };
 
-        // 사용자 ID 가져오기
-        const userId = encodeURIComponent(document.getElementById('user-id').textContent);
-        console.log("이기 뭔데 ", userId);
+        // 사용자 닉네임 가져오기
+        const nickname = encodeURIComponent(document.getElementById('user-id').textContent);
+        console.log("이기 뭔데 ", nickname);
 
         // GET 방식으로 Query Parameter 생성
         const queryParams = new URLSearchParams(paymentData);
@@ -296,17 +296,13 @@
             url: url,
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${userId}`
+                'Authorization': `Bearer ${nickname}`
             },
             success: function(response) {
                 console.log('서버 응답:', response);
-
-                if (response.success && response.userExists) {
-                    // 유저 존재 확인 완료 - success 페이지로 이동
-                    redirectToSuccessWithHttpData(response.paymentData, userId);
-                } else {
-                    alert('사용자 검증 실패: ' + response.message);
-                }
+                // 유저 존재 확인 완료 - success 페이지로 이동
+                if (response.success && response.userExists) redirectSuccess(response.paymentData, nickname);
+                else alert('사용자 검증 실패: ' + response.message);
             },
             error: function(xhr, status, error) {
                 console.error('서버 통신 실패:', xhr.responseText);
@@ -320,14 +316,14 @@
 
     // HTTP 방식으로 success 페이지에 데이터 전달하는 함수도 전역으로 정의
     // redirectToSuccessWithHttpData 함수를 이것으로 교체
-    function redirectToSuccessWithHttpData(paymentData, userId) {
+    function redirectSuccess(paymentData, nickname) {
         console.log('💾 sessionStorage에 결제 정보 저장');
         console.log('📊 원본 paymentData:', paymentData);
-        console.log('👤 원본 userId:', userId);
+        console.log('👤 원본 nickname:', nickname);
 
         // sessionStorage에 결제 정보 저장 (브라우저 탭 종료시까지 유지)
         const paymentInfo = {
-            userId: decodeURIComponent(userId),
+            nickname: decodeURIComponent(nickname),
             orderId: paymentData.orderId || 'N/A',
             amount: paymentData.amount || '0',
             orderName: paymentData.orderName || 'N/A',
@@ -347,7 +343,6 @@
 
         // URL에는 민감정보 없이 단순 이동
         window.location.href = '/success';
-
     }
 
     // 구매하기 버튼 누르면 실행됨

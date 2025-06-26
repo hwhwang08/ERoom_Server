@@ -105,17 +105,6 @@ async function checkUserExists(uid) {
 }
 
 // 아임포트 관련 함수들
-async function getToken() {
-    if (!IMP_API_KEY || !IMP_API_SECRET) throw new Error('아임포트 API 키가 설정되지 않음');
-
-    const response = await axios.post('https://api.iamport.kr/users/getToken', {
-        imp_key: IMP_API_KEY,
-        imp_secret: IMP_API_SECRET,
-    });
-    if (response.data.code === 0) return response.data.response.access_token;
-    throw new Error('아임포트 토큰 발급 실패');
-}
-
 async function verifyPayment(imp_uid) {
     try {
         const token = await getToken();
@@ -135,8 +124,6 @@ async function verifyPayment(imp_uid) {
         return false;
     }
 }
-
-function validateUserId(userId) { return true; }
 
 // ✅ 중요! 토큰 관련 라우트들을 맨 위로 이동
 app.post('/store-payment-data', (req, res) => {
@@ -240,7 +227,7 @@ app.get('/firebase-config', (req, res) => {
         console.log('PROJECT_ID:', process.env.NEXT_FIREBASE_PROJECT_ID ? '✅ 존재' : '❌ 없음');
 
         const config = {
-            service: JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)|| "ㅇ안돼",
+            // service: JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)|| "ㅇ안돼",
             apiKey: process.env.NEXT_FIREBASE_API_KEY || "dummy-api-key",
             authDomain: process.env.NEXT_FIREBASE_AUTH_DOMAIN || "dummy-auth-domain",
             databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -250,11 +237,9 @@ app.get('/firebase-config', (req, res) => {
             appId: process.env.NEXT_FIREBASE_APP_ID || "dummy-app-id",
             measurementId: process.env.NEXT_FIREBASE_MEASUREMENT_ID || "dummy-measurement-id"
         };
-
         console.log('🎯 Firebase Config 전송:', Object.keys(config));
         res.setHeader('Content-Type', 'application/json');
         res.json(config);
-
     } catch (error) {
         console.error('❌ Firebase config 오류:', error);
         res.setHeader('Content-Type', 'application/json');
@@ -265,16 +250,16 @@ app.get('/firebase-config', (req, res) => {
     }
 });
 
-// 헬스체크 라우트
+// 헬스체크 라우트. 디버깅용이니 지워도 무관
 app.get('/health', (req, res) => {
     console.log('🔍 Firebase 초기화 상태:', firebaseInitialized);
-    console.log('🔍 환경변수 존재 여부:', !!process.env.FIREBASE_SERVICE_ACCOUNT);
+    // console.log('🔍 환경변수 존재 여부:', !!process.env.FIREBASE_SERVICE_ACCOUNT);
 
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
         firebase: firebaseInitialized ? 'initialized' : 'disabled',
-        firebaseEnvExists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+        // firebaseEnvExists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
         iamport: !!IMP_API_KEY,
         version: '2.1.0-debug',
         tempDataCount: tempDataStore.size
@@ -328,10 +313,10 @@ app.get('/verify-user-and-payment', async (req, res) => {
         });
     }
 
-    const userId = authHeader.replace('Bearer ', '').trim();
-    console.log('🔍 사용자 검증:', decodeURIComponent(userId));
+    const nickname = authHeader.replace('Bearer ', '').trim();
+    console.log('🔍 사용자 검증:', decodeURIComponent(nickname));
 
-    if (!userId || !validateUserId(userId)) {
+    if (!nickname) {
         return res.status(401).json({
             success: false,
             userExists: false,
@@ -344,7 +329,7 @@ app.get('/verify-user-and-payment', async (req, res) => {
     res.json({
         success: true,
         userExists: true,
-        userId: decodeURIComponent(userId),
+        nickname: decodeURIComponent(nickname),
         message: '사용자 검증 및 결제 데이터 처리 완료',
         paymentData: { orderId, amount, orderName, method, paymentKey, creditAmount }
     });
@@ -364,9 +349,7 @@ app.post('/purchase', (req, res) => {
 app.get('/payment-complete', async (req, res) => {
     const { imp_uid, merchant_uid } = req.query;
 
-    if (!imp_uid || !merchant_uid) {
-        return res.status(400).send('잘못된 요청입니다.');
-    }
+    if (!imp_uid || !merchant_uid) return res.status(400).send('잘못된 요청입니다.');
 
     try {
         const verified = await verifyPayment(imp_uid);
@@ -398,9 +381,8 @@ app.get('/save-uid', async (req, res) => {
         });
         // 크레딧 파라미터가 있으면 URL에 추가해서 리다이렉트
         let redirectUrl = '/';
-        if (creditParam) {
-            redirectUrl += `?credit=${creditParam}`;
-        }
+        if (creditParam) redirectUrl += `?credit=${creditParam}`;
+
         console.log("!!! url확인용", redirectUrl);
         res.redirect(redirectUrl);
     } else {
@@ -446,61 +428,19 @@ app.get('/', async (req, res) => {
                 sessionStorage.setItem('userId', nickname);
                 sessionStorage.setItem('userUid', uid);
                 sessionStorage.setItem('selectedCredit', selectedCredit);
-                const userIdElement = document.getElementById('user-id');
-                if (userIdElement) userIdElement.textContent = nickname;
             </script></body>`
         );
-
         res.send(modifiedHtml);
     });
 });
 
 app.get('/success', (req, res) => {
-    // 토큰 방식인지 확인
-    const token = req.query.token;
-    if (token) {
-        // 토큰 방식 - success.html 그대로 반환
-        const filePath = path.join(__dirname, '../public/success.html');
-        return res.sendFile(filePath);
-    }
-
-    // 기존 방식 (호환성 유지)
-    const nickname = req.cookies?.nickname || 'unknown';
-    const { imp_uid, merchant_uid, orderId, amount, orderName, method } = req.query;
-
-    const paymentData = {
-        imp_uid,
-        merchant_uid,
-        orderId: orderId || merchant_uid,
-        amount,
-        orderName,
-        method,
-        nickname
-    };
-
-    const fs = require('fs');
     const filePath = path.join(__dirname, '../public/success.html');
-
-    fs.readFile(filePath, 'utf8', (err, html) => {
+    res.sendFile(filePath, (err) => {
         if (err) {
             console.error('success.html 읽기 오류:', err);
             return res.status(500).send('파일 읽기 오류');
         }
-
-        const modifiedHtml = html.replace(
-            '</body>',
-            `<script>
-                window.addEventListener('DOMContentLoaded', () => {
-                    const paymentData = ${JSON.stringify(paymentData)};
-                    document.getElementById('orderId').textContent = paymentData.orderId || '-';
-                    document.getElementById('orderName').textContent = paymentData.orderName || '-';
-                    document.getElementById('amount').textContent = paymentData.amount ? Number(paymentData.amount).toLocaleString() + '원' : '-';
-                    document.getElementById('method').textContent = paymentData.method || '-';
-                    window.paymentData = paymentData;
-                });
-            </script></body>`
-        );
-        res.send(modifiedHtml);
     });
 });
 
@@ -542,8 +482,8 @@ module.exports = app;
 
 
 // 로컬 개발용
+// const PORT = 7999;
 // https.createServer(options, app).listen(PORT, () => {
-    // const PORT = 7999;
 //     console.log(`✅ HTTPS 서버 실행 중: https://localhost:${PORT}`);
 //     console.log(`🔍 헬스체크: https://localhost:${PORT}/health`);
 // });
