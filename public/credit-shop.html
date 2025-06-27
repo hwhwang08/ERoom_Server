@@ -240,12 +240,12 @@
         // Firebase가 초기화된 경우에만 사용자 정보 조회
         if (firebaseInitialized && db) {
             try {
-                const snapshot = await db.collection('user_Datas').where('uid','==',uid).get();
+                const snapshot = await db.collection('Users').where('UserId','==',uid).get();
 
                 if (!snapshot.empty) {
                     const userData = snapshot.docs[0].data();
-                    currentUserEmail = userData.email;
-                    currentUserName = userData.nickname;
+                    currentUserEmail = userData.Email;
+                    currentUserName = userData.Username;
                     document.getElementById('user-id').textContent = currentUserName;
 
                     console.log('✅ 사용자 이름:', currentUserName);
@@ -265,10 +265,8 @@
                 targetOption.classList.add('selected');
                 selectedOption = targetOption;
                 // 잠깐 대기 후 자동으로 결제 진행
-                setTimeout(() => {
-                    console.log(`${selectedCredit} 크레딧 자동 결제 시작`);
-                    requestpay();
-                }, 1000); // 1초 대기 후 결제창 실행
+                console.log(`${selectedCredit} 크레딧 자동 결제 시작`);
+                requestpay();
             }
             // sessionStorage에서 selectedCredit 제거 (한 번만 사용)
             sessionStorage.removeItem('selectedCredit');
