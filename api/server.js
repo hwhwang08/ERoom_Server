@@ -10,10 +10,10 @@ const app = express();
 const fs = require('fs');
 
 // 로컬 테스트용
-const options = {
-    key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
-    cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
-};
+// const options = {
+//     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
+//     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
+// };
 
 // env파일불러오는 코드.
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
@@ -479,6 +479,7 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
+
 
 // || 7999와 https는 로컬 개발용
 if (require.main === module) {
