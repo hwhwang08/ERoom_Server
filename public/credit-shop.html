@@ -240,15 +240,10 @@
         // Firebase가 초기화된 경우에만 사용자 정보 조회
         if (firebaseInitialized && db) {
             try {
-                console.log('🔍 Users 컬렉션 조회 시작, UID:', uid);
-                console.log('📊 DB 객체 확인:', db);
-
                 const snapshot = await db.collection('Users').where('UserId','==',uid).get();
-                console.log('📄 쿼리 결과:', snapshot.size, '개 문서 발견');
 
                 if (!snapshot.empty) {
                     const userData = snapshot.docs[0].data();
-                    console.log('📋 사용자 데이터:', userData);
 
                     currentUserEmail = userData.Email;
                     currentUserName = userData.Username;
@@ -402,8 +397,8 @@
         const amount = parseInt(selectedOption.getAttribute('data-price'));
 
         IMP.request_pay({
-            pg: 'nice_v2',
-            // pg: 'kakaopay',
+            // pg: 'nice_v2',
+            pg: 'kakaopay',
             // pg: 'tosspay',
             pay_method: 'card',
             merchant_uid: `payment-${new Date().getTime()}`,
@@ -424,12 +419,12 @@
             if(rsp.error_code) {
                 console.log('결제 실패/취소 처리');
                 console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
-            // } else if (!rsp.success) {
-            //     // 카카오페이용. 나이스페이할거면 주석처리할것
-            //     const iframes = document.querySelectorAll("iframe");
-            //     iframes.forEach(iframe => iframe.remove());
-            //     console.log('결제 실패/취소 처리');
-            //     console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
+            } else if (!rsp.success) {
+                // 카카오페이용. 나이스페이할거면 주석처리할것
+                const iframes = document.querySelectorAll("iframe");
+                iframes.forEach(iframe => iframe.remove());
+                console.log('결제 실패/취소 처리');
+                console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
             } else if (rsp.imp_uid && rsp.merchant_uid) {
             // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
                 console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
