@@ -376,9 +376,7 @@ app.get('/save-uid', async (req, res) => {
 
         console.log("!!! url확인용", redirectUrl);
         res.redirect(redirectUrl);
-    } else {
-        res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
-    }
+    } else res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
 });
 
 app.get('/login', (req, res) => {
@@ -471,7 +469,6 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
 
-
 // // 로컬테스트용 https
 // const https = require('https');
 //
@@ -483,7 +480,7 @@ module.exports = app;
 // || 7999와 https는 로컬 개발용
 if (require.main === module) {
     const PORT = process.env.PORT || 7999;
-// https.createServer(options, app).listen(PORT, () => {
+    // https.createServer(options, app).listen(PORT, () => {
     app.listen(PORT, () => {
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
         console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
