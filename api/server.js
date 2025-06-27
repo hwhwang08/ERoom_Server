@@ -5,16 +5,7 @@ const cookieParser = require('cookie-parser');
 const querystring = require('querystring');
 const axios = require('axios');
 const app = express();
-// 로컬테스트용 https
-// const https = require('https');
 const fs = require('fs');
-
-// 로컬 테스트용
-// const options = {
-//     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
-//     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
-// };
-
 // env파일불러오는 코드.
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -44,7 +35,7 @@ let admin = require('firebase-admin');
 let firebaseInitialized = false;
 
 try {
-    // 로컬로 할거면 if주석처리
+    // !!! 로컬로 할거면 if주석처리
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -480,6 +471,14 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
 
+
+// // 로컬테스트용 https
+// const https = require('https');
+//
+// const options = {
+//     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
+//     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
+// };
 
 // || 7999와 https는 로컬 개발용
 if (require.main === module) {
