@@ -10,10 +10,10 @@ const app = express();
 const fs = require('fs');
 
 // 로컬 테스트용
-// const options = {
-//     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
-//     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
-// };
+const options = {
+    key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
+    cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
+};
 
 // env파일불러오는 코드.
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
@@ -480,17 +480,10 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
 
-
-// 로컬 개발용
-// const PORT = 7999;
-// https.createServer(options, app).listen(PORT, () => {
-//     console.log(`✅ HTTPS 서버 실행 중: https://localhost:${PORT}`);
-//     console.log(`🔍 헬스체크: https://localhost:${PORT}/health`);
-// });
-
-// || 3000은 로컬 개발용
+// || 7999와 https는 로컬 개발용
 if (require.main === module) {
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 7999;
+// https.createServer(options, app).listen(PORT, () => {
     app.listen(PORT, () => {
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
         console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
