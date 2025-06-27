@@ -240,8 +240,8 @@
             try {
                 if (firebaseInitialized && db) {
                     // Firebase에서 사용자 확인
-                    const querySnapshot = await db.collection('user_Datas')
-                        .where("uid", "==", userId)
+                    const querySnapshot = await db.collection('Users')
+                        .where("UserId", "==", userId)
                         .get();
 
                     if (!querySnapshot.empty) {

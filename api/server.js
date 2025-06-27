@@ -82,8 +82,8 @@ async function checkUserExists(uid) {
 
     try {
         console.log('🔍 Firebase에서 사용자 검색:', uid);
-        const userdata = await admin.firestore().collection('user_Datas')
-            .where("uid", "==", uid)
+        const userdata = await admin.firestore().collection('Users')
+            .where("UserId", "==", uid)
             .get();
 
         if (userdata.empty) {
