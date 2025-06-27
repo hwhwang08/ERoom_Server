@@ -240,10 +240,16 @@
         // Firebase가 초기화된 경우에만 사용자 정보 조회
         if (firebaseInitialized && db) {
             try {
+                console.log('🔍 Users 컬렉션 조회 시작, UID:', uid);
+                console.log('📊 DB 객체 확인:', db);
+
                 const snapshot = await db.collection('Users').where('UserId','==',uid).get();
+                console.log('📄 쿼리 결과:', snapshot.size, '개 문서 발견');
 
                 if (!snapshot.empty) {
                     const userData = snapshot.docs[0].data();
+                    console.log('📋 사용자 데이터:', userData);
+
                     currentUserEmail = userData.Email;
                     currentUserName = userData.Username;
                     document.getElementById('user-id').textContent = currentUserName;
@@ -253,6 +259,8 @@
                 } else window.location.href = '/login';
             } catch (error) {
                 console.error('❌ 사용자 정보 조회 실패:', error);
+                console.error('❌ 에러 코드:', error.code);
+                console.error('❌ 에러 메시지:', error.message);
             }
         } else alert('Firebase 비활성화됨. 크샵이');
 
@@ -291,6 +299,9 @@
         const nickname = encodeURIComponent(document.getElementById('user-id').textContent);
         console.log("이기 뭔데 ", nickname);
 
+        // 🔥 파이어베이스에 결제 정보 저장
+        savePaymentToFirebase(paymentData, nickname);
+
         // GET 방식으로 Query Parameter 생성
         const queryParams = new URLSearchParams(paymentData);
         const url = `/verify-user-and-payment?${queryParams.toString()}`;
@@ -316,6 +327,42 @@
             }
         });
     }
+
+    // 파베에 결제 정보 저장하는 함수
+    async function savePaymentToFirebase(paymentData, nickname) {
+        if (!firebaseInitialized || !db) return console.warn('⚠️ Firebase가 초기화되지 않았습니다.');
+
+        try {
+            const userId = sessionStorage.getItem('userUid'); // 현재 로그인한 사용자 UID
+            const userName = decodeURIComponent(nickname);
+
+            // user_Payment 컬렉션에 저장할 데이터
+            const paymentDocument = {
+                userId: userId,
+                userName: userName,
+                orderId: paymentData.orderId,
+                amount: parseInt(paymentData.amount),
+                orderName: paymentData.orderName,
+                paymentMethod: paymentData.method,
+                paymentKey: paymentData.paymentKey,
+                creditAmount: parseInt(paymentData.creditAmount),
+                paymentStatus: 'completed',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                timestamp: new Date().toISOString()
+            };
+
+            console.log('💾 파이어베이스에 저장할 결제 데이터:', paymentDocument);
+
+            // user_Payment 컬렉션에 문서 추가
+            const docRef = await db.collection('user_Payment').add(paymentDocument);
+
+            console.log('✅ 파이어베이스 결제 정보 저장 성공! 문서 ID:', docRef.id);
+
+            // 결제는 성공했지만 저장 실패 시 에러 로그만 남기고 진행
+        } catch (error) { console.error('❌ 파이어베이스 결제 정보 저장 실패:', error);}
+    }
+
+
 
     // HTTP 방식으로 success 페이지에 데이터 전달하는 함수도 전역으로 정의
     // redirectToSuccessWithHttpData 함수를 이것으로 교체
