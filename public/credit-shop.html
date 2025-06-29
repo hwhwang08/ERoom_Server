@@ -732,11 +732,6 @@
 
     // 구매하기 버튼 누르면 실행됨
     function requestpay() {
-        if (!selectedPG) {
-            alert("결제 수단을 먼저 선택하세요.");
-            return;
-        }
-
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
         const amount = parseInt(selectedOption.getAttribute('data-price'));
 
