@@ -349,6 +349,14 @@
             position: relative;
             left: 400px;
         }
+
+        .modal.hidden { display: none; }
+        .modal {
+            position: fixed; top: 30%; left: 30%;
+            background: white; border: 1px solid #ccc;
+            padding: 20px; z-index: 9999;
+        }
+
     </style>
 </head>
 
@@ -363,6 +371,14 @@
     <h1>크레딧 상점</h1>
     <div class="user-info">
         환영합니다! <span id="user-id" class="user-id">로딩중...</span>님!
+    </div>
+    <div id="pg-modal" class="modal hidden">
+        <h3>결제 수단을 선택하세요</h3>
+        <button onclick="handlePGSelect('kakaopay')">카카오페이</button>
+        <button onclick="handlePGSelect('tosspay')">토스페이</button>
+        <button onclick="handlePGSelect('payco')">페이코</button>
+        <button onclick="handlePGSelect('nice_v2')">나이스페이</button>
+        <button onclick="document.getElementById('pg-modal').classList.add('hidden')">닫기</button>
     </div>
     <div class="credit-options">
         <div class="credit-option" data-credit="100" data-price="1000">
@@ -418,6 +434,7 @@
     // Firebase 초기화
     let db = null;
     let firebaseInitialized = false;
+    let selectedPG = null; // 선택된 결제 수단 (pg사)
 
     async function initializeFirebase() {
         try {
@@ -592,8 +609,6 @@
         } catch (error) { console.error('❌ 파이어베이스 결제 정보 저장 실패:', error);}
     }
 
-
-
     // HTTP 방식으로 success 페이지에 데이터 전달하는 함수도 전역으로 정의
     // redirectToSuccessWithHttpData 함수를 이것으로 교체
     function redirectSuccess(paymentData, nickname) {
@@ -627,12 +642,17 @@
 
     // 구매하기 버튼 누르면 실행됨
     function requestpay() {
+        if (!selectedPG) {
+            alert("결제 수단을 먼저 선택하세요.");
+            return;
+        }
+
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
         const amount = parseInt(selectedOption.getAttribute('data-price'));
 
         IMP.request_pay({
+            pg: selectedPG,
             // pg: 'nice_v2',
-            pg: 'kakaopay',
             // pg: 'tosspay',
             // pg: 'payco',
             pay_method: 'card',
@@ -672,6 +692,7 @@
                 sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
                 sendToServer(rsp);
             }
+            selectedPG = null;
         });
     }
 
@@ -685,9 +706,15 @@
         option.classList.add('selected');
         selectedOption = option;
 
-        requestpay();
+        // 결제수단 선택 모달 표시
+        document.getElementById('pg-modal').classList.remove('hidden');
     }
 
+    function handlePGSelect(pgName) {
+        selectedPG = pgName; // 선택된 PG사 저장
+        document.getElementById('pg-modal').classList.add('hidden'); // 모달 닫기
+        requestpay(); // 결제 함수 실행
+    }
 
     // 크레딧 옵션 클릭 처리
     document.querySelectorAll('.credit-option').forEach(option => {
@@ -700,7 +727,9 @@
             document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
             this.classList.add('selected');
             selectedOption = this;
-            requestpay();
+
+            // 결제수단 선택 모달 표시
+            document.getElementById('pg-modal').classList.remove('hidden');
         });
     });
 </script>
