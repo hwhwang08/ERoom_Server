@@ -601,7 +601,10 @@
             console.log('💾 파이어베이스에 저장할 결제 데이터:', paymentDocument);
 
             // user_Payment 컬렉션에 문서 추가
-            const docRef = await db.collection('user_Payment').doc(formattedTimestamp).set(paymentDocument);
+            // 문서 참조를 먼저 생성
+            const docRef = db.collection('user_Payment').doc(formattedTimestamp);
+            // set() 호출 (반환값 없음)
+            await docRef.set(paymentDocument);
 
             console.log('✅ 파이어베이스 결제 정보 저장 성공! 문서 ID:', docRef.id);
 
