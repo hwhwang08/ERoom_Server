@@ -6,13 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="8aca55dd-9d2d-4322-8825-184d2ade93f4" name="변경" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/calenderCoin3d.png" beforeDir="false" afterPath="$PROJECT_DIR$/public/img/calenderCoin3d.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/calenderCoins3d.png" beforeDir="false" afterPath="$PROJECT_DIR$/public/img/calenderCoins3d.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/key1.png" beforeDir="false" afterPath="$PROJECT_DIR$/public/img/key1.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/key2.png" beforeDir="false" afterPath="$PROJECT_DIR$/public/img/key2.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/key3.png" beforeDir="false" afterPath="$PROJECT_DIR$/public/img/key3.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/key4.png" beforeDir="false" afterPath="$PROJECT_DIR$/public/img/key4.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/key5.png" beforeDir="false" afterPath="$PROJECT_DIR$/public/img/key5.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/api/server.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -134,7 +128,7 @@
       <workItem from="1750896977159" duration="27283000" />
       <workItem from="1750996957309" duration="10915000" />
       <workItem from="1751010371075" duration="7489000" />
-      <workItem from="1751168673977" duration="2713000" />
+      <workItem from="1751168673977" duration="2831000" />
     </task>
     <servers />
   </component>
