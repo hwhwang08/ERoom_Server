@@ -17,7 +17,8 @@ app.use(cors({
     credentials: true
 }));
 
-app.use('/img', express.static(path.join(__dirname, '../img')));
+// 로컬용
+// app.use('/img', express.static(path.join(__dirname, '../img')));
 
 
 app.use(express.json());
