@@ -17,6 +17,9 @@ app.use(cors({
     credentials: true
 }));
 
+app.use('/img', express.static(path.join(__dirname, '../img')));
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -483,6 +486,7 @@ if (require.main === module) {
     // https.createServer(options, app).listen(PORT, () => {
     app.listen(PORT, () => {
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
+        console.log(`✅ 서버 실행 중: http://localhost:${PORT}/login`);
         console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
     });
 }
