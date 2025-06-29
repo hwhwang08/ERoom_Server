@@ -32,6 +32,12 @@
             background-color: #000;
         }
 
+        img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
         .container {
             max-width: 1280px;
             height: 1500px;
@@ -217,11 +223,7 @@
             padding-bottom: 50px;
         }
 
-        .img_wrap img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
+
 
         @keyframes bangbang {
             0%   { transform: rotateY(0deg); }
@@ -362,9 +364,74 @@
             background: white;
             border: 1px solid #ccc;
             border-radius: 8px;
-            padding: 20px; z-index: 1;
+            padding: 30px;
+            z-index: 1;
         }
 
+        .modal .font-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal .font-wrap > div:nth-of-type(1) {
+            font-size: 32px;
+            font-weight: 700;
+            padding: 30px;
+        }
+
+        .modal .font-wrap > div {
+            font-size: 25px;
+            font-weight: 500;
+        }
+
+        .modal button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .modal .xbtn {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            right: 30px;
+        }
+
+        .modal .xbtn::before,
+        .modal .xbtn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 24px;
+            background-color: #333;
+            transform-origin: center;
+        }
+
+        .modal .xbtn::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .modal .xbtn::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        .modal .pg_btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2칸 */
+            grid-template-rows: 1fr 1fr;    /* 2줄 */
+            gap: 30px;
+            align-items: center;
+            padding-top: 40px;
+        }
+
+        .modal .pg_btns > button {
+            width: 150px;
+            font-size: 18px;
+        }
     </style>
 </head>
 
@@ -381,12 +448,24 @@
         환영합니다! <span id="user-id" class="user-id">로딩중...</span>님!
     </div>
     <div id="pg-modal" class="modal hidden">
-        <button onclick="document.getElementById('pg-modal').classList.add('hidden')">닫기</button>
-        <h3>결제 수단을 선택하세요</h3>
-        <button onclick="handlePGSelect('kakaopay')">카카오페이</button>
-        <button onclick="handlePGSelect('tosspay')">토스페이</button>
-        <button onclick="handlePGSelect('payco')">페이코</button>
-        <button onclick="handlePGSelect('nice_v2')">그 외</button>
+        <button class="xbtn" onclick="document.getElementById('pg-modal').classList.add('hidden')"></button>
+        <div class="font-wrap">
+            <div>결제 수단을 선택하세요</div>
+            <div class="pay-product"></div>
+            <div class="pay-amount"></div>
+        </div>
+        <div class="pg_btns">
+            <button onclick="handlePGSelect('kakaopay')">
+                <img src="./img/kakaopay.svg">
+            </button>
+            <button onclick="handlePGSelect('tosspay')">
+                <img src="./img/tosspay.png">
+            </button>
+            <button onclick="handlePGSelect('payco')">
+                <img src="./img/payco.jpg">
+            </button>
+            <button onclick="handlePGSelect('nice_v2')">그 외</button>
+        </div>
     </div>
     <div class="credit-options">
         <div class="credit-option" data-credit="100" data-price="1000">
@@ -685,12 +764,6 @@
             if(rsp.error_code) {
                 console.log('결제 실패/취소 처리');
                 console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
-            } else if (!rsp.success) {
-                // 카카오페이용. 나이스페이할거면 주석처리할것
-                const iframes = document.querySelectorAll("iframe");
-                iframes.forEach(iframe => iframe.remove());
-                console.log('결제 실패/취소 처리');
-                console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
             } else if (rsp.success === true && rsp.imp_uid && rsp.merchant_uid) {
                 console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
                 sessionStorage.setItem('orderId', rsp.merchant_uid);
@@ -701,7 +774,7 @@
                 sessionStorage.setItem('creditAmount', selectedOption.getAttribute('data-credit'));
                 sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
                 sendToServer(rsp);
-            } else if (rsp.imp_uid && rsp.merchant_uid) {
+            } else if ((rsp.success === undefined || rsp.success === null) && rsp.imp_uid && rsp.merchant_uid) {
             // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
                 console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
                 sessionStorage.setItem('orderId', rsp.merchant_uid);
@@ -712,8 +785,14 @@
                 sessionStorage.setItem('creditAmount', selectedOption.getAttribute('data-credit'));
                 sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
                 sendToServer(rsp);
-            }
+            } else if (!rsp.success) {
+            // 카카오페이용. 나이스페이할거면 주석처리할것
+            const iframes = document.querySelectorAll("iframe");
+            iframes.forEach(iframe => iframe.remove());
+            console.log('결제 실패/취소 처리');
+            console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
             selectedPG = null;
+            }
         });
     }
 
@@ -726,6 +805,12 @@
         document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
         option.classList.add('selected');
         selectedOption = option;
+
+        // 상품 정보 표시
+        const productName = option.querySelector('.credit-amount').textContent;
+        const price = option.getAttribute('data-price');
+        document.querySelector('.pay-product').textContent = `${productName}`;
+        document.querySelector('.pay-amount').textContent = `${Number(price).toLocaleString()}원`;
 
         // 결제수단 선택 모달 표시
         document.getElementById('pg-modal').classList.remove('hidden');
@@ -743,11 +828,16 @@
             // 버튼 클릭이면 이 이벤트에서는 아무 것도 하지 않음 (버튼에 따로 requestpay() 있음)
             if (event.target.classList.contains('purchase-button')) return;
 
-
             // 선택 표시 처리. 다른 섹렉 클래스명 없애는거.
             document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
             this.classList.add('selected');
             selectedOption = this;
+
+            // 상품 정보 표시
+            const productName = this.querySelector('.credit-amount').textContent;
+            const price = this.getAttribute('data-price');
+            document.querySelector('.pay-product').textContent = `${productName}`;
+            document.querySelector('.pay-amount').textContent = `${Number(price).toLocaleString()}원`;
 
             // 결제수단 선택 모달 표시
             document.getElementById('pg-modal').classList.remove('hidden');
