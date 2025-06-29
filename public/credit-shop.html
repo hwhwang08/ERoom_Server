@@ -603,9 +603,19 @@
                 document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
                 targetOption.classList.add('selected');
                 selectedOption = targetOption;
+
+                // 상품 정보 표시
+                const productName = targetOption.querySelector('.credit-amount').textContent;
+                const price = targetOption.getAttribute('data-price');
+                document.querySelector('.pay-product').textContent = `${productName}`;
+                document.querySelector('.pay-amount').textContent = `${Number(price).toLocaleString()}원`;
+
                 // 잠깐 대기 후 자동으로 결제 진행
-                console.log(`${selectedCredit} 크레딧 자동 결제 시작`);
-                requestpay();
+                document.getElementById('pg-modal').classList.remove('hidden');
+
+
+                // console.log(`${selectedCredit} 크레딧 자동 결제 시작`);
+                // requestpay();
             }
             // sessionStorage에서 selectedCredit 제거 (한 번만 사용)
             sessionStorage.removeItem('selectedCredit');
