@@ -17,7 +17,6 @@ app.use(cors({
     credentials: true
 }));
 
-// 로컬용
 // app.use('/img', express.static(path.join(__dirname, '../img')));
 
 
@@ -484,8 +483,8 @@ module.exports = app;
 // || 7999와 https는 로컬 개발용
 if (require.main === module) {
     const PORT = process.env.PORT || 7999;
-    // https.createServer(options, app).listen(PORT, () => {
-    app.listen(PORT, () => {
+    https.createServer(options, app).listen(PORT, () => {
+    // app.listen(PORT, () => {
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}/login`);
         console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
