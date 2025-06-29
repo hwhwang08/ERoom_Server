@@ -350,11 +350,19 @@
             left: 400px;
         }
 
-        .modal.hidden { display: none; }
+        .modal.hidden {
+            display: none;
+        }
+
         .modal {
-            position: fixed; top: 30%; left: 30%;
-            background: white; border: 1px solid #ccc;
-            padding: 20px; z-index: 9999;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px; z-index: 1;
         }
 
     </style>
@@ -373,12 +381,12 @@
         환영합니다! <span id="user-id" class="user-id">로딩중...</span>님!
     </div>
     <div id="pg-modal" class="modal hidden">
+        <button onclick="document.getElementById('pg-modal').classList.add('hidden')">닫기</button>
         <h3>결제 수단을 선택하세요</h3>
         <button onclick="handlePGSelect('kakaopay')">카카오페이</button>
         <button onclick="handlePGSelect('tosspay')">토스페이</button>
         <button onclick="handlePGSelect('payco')">페이코</button>
-        <button onclick="handlePGSelect('nice_v2')">나이스페이</button>
-        <button onclick="document.getElementById('pg-modal').classList.add('hidden')">닫기</button>
+        <button onclick="handlePGSelect('nice_v2')">그 외</button>
     </div>
     <div class="credit-options">
         <div class="credit-option" data-credit="100" data-price="1000">
