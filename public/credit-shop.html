@@ -19,6 +19,11 @@
             --pc: #41c66a;
         }
 
+        ::selection {
+            background: var(--pc);
+            color: #ffffff;
+        }
+
         body {
             height: 1600px;
             font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
@@ -339,6 +344,8 @@
             line-height: 2rem;
             color: #fff;
             font-weight: 900;
+            position: relative;
+            left: 400px;
         }
     </style>
 </head>
@@ -615,7 +622,6 @@
 
     // 구매하기 버튼 누르면 실행됨
     function requestpay() {
-        if (!selectedOption) return alert("상품을 선택해주세요!");
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
         const amount = parseInt(selectedOption.getAttribute('data-price'));
 
@@ -663,29 +669,18 @@
         });
     }
 
-    function selectAndPay(button) {
-        const optionDiv = button.closest('.credit-option');
-        if (!optionDiv) return;
-
-        // 이전 선택 해제
-        document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
-
-        // 현재 선택 적용
-        optionDiv.classList.add('selected');
-        selectedOption = optionDiv;
-
-        // 결제 실행
-        requestpay();
-    }
-
-
     // 크레딧 옵션 클릭 처리
     document.querySelectorAll('.credit-option').forEach(option => {
-        option.addEventListener('click', function() {
-            // 선택 표시 처리
+        option.addEventListener('click', function(event) {
+            // 버튼 클릭이면 이 이벤트에서는 아무 것도 하지 않음 (버튼에 따로 requestpay() 있음)
+            if (event.target.classList.contains('purchase-button')) return;
+
+
+            // 선택 표시 처리. 다른 섹렉 클래스명 없애는거.
             document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
             this.classList.add('selected');
             selectedOption = this;
+            requestpay();
         });
     });
 </script>
