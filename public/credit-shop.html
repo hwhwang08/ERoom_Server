@@ -213,7 +213,7 @@
         /*}*/
 
         .img_wrap {
-            width: 150px;
+            width: 160px;
             padding-bottom: 50px;
         }
 
@@ -563,6 +563,9 @@
             const userId = sessionStorage.getItem('userUid'); // 현재 로그인한 사용자 UID
             const userName = decodeURIComponent(nickname);
 
+            const now = new Date();
+            const formattedTimestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '.' + now.getMilliseconds();
+
             // user_Payment 컬렉션에 저장할 데이터
             const paymentDocument = {
                 userId: userId,
@@ -575,13 +578,13 @@
                 creditAmount: parseInt(paymentData.creditAmount),
                 paymentStatus: 'completed',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                timestamp: new Date().toISOString()
+                timestamp: now.toISOString()
             };
 
             console.log('💾 파이어베이스에 저장할 결제 데이터:', paymentDocument);
 
             // user_Payment 컬렉션에 문서 추가
-            const docRef = await db.collection('user_Payment').add(paymentDocument);
+            const docRef = await db.collection('user_Payment').doc(formattedTimestamp).set(paymentDocument);
 
             console.log('✅ 파이어베이스 결제 정보 저장 성공! 문서 ID:', docRef.id);
 
