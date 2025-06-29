@@ -368,35 +368,35 @@
                 <img src="./img/key1.png" alt="열쇠1">
             </div>
             <div class="credit-amount">100 크레딧</div>
-            <button class="purchase-button" onclick="requestpay()">₩ 1,000</button>
+            <button class="purchase-button" onclick="ButtonClick(event)">₩ 1,000</button>
         </div>
         <div class="credit-option" data-credit="300" data-price="2700">
             <div class="img_wrap">
                 <img src="/img/key2.png">
             </div>
             <div class="credit-amount">300 크레딧</div>
-            <button class="purchase-button" onclick="requestpay()">₩ 2,700</button>
+            <button class="purchase-button" onclick="ButtonClick(event)">₩ 2,700</button>
         </div>
         <div class="credit-option most-popular" data-credit="500" data-price="4000">
             <div class="img_wrap">
                 <img src="/img/key3.png">
             </div>
             <div class="credit-amount">500 크레딧</div>
-            <button class="purchase-button" onclick="requestpay()">₩ 4,000</button>
+            <button class="purchase-button" onclick="ButtonClick(event)">₩ 4,000</button>
         </div>
         <div class="credit-option" data-credit="1000" data-price="7500">
             <div class="img_wrap">
                 <img src="/img/key4.png">
             </div>
             <div class="credit-amount">1,000 크레딧</div>
-            <button class="purchase-button" onclick="requestpay()">₩ 7,500</button>
+            <button class="purchase-button" onclick="ButtonClick(event)">₩ 7,500</button>
         </div>
         <div class="credit-option" data-credit="2000" data-price="14000">
             <div class="img_wrap">
                 <img src="/img/key5.png">
             </div>
             <div class="credit-amount">2,000 크레딧</div>
-            <button class="purchase-button" onclick="requestpay()">₩ 14,000</button>
+            <button class="purchase-button" onclick="ButtonClick(event)">₩ 14,000</button>
         </div>
         <div class="credit-option" data-credit="5000" data-price="30000">
             <div class="img_wrap">
@@ -405,7 +405,7 @@
                 <img src="/img/calenderCoins3d.png" alt="이미지">
             </div>
             <div class="credit-amount">5,000 크레딧</div>
-            <button class="purchase-button" onclick="requestpay()">₩ 30,000</button>
+            <button class="purchase-button" onclick="ButtonClick(event)">₩ 30,000</button>
         </div>
     </div>
     <div class="background" data-aos="fade-up-left" data-aos-duration="600" data-aos-anchor=".main_buisness"
@@ -668,6 +668,20 @@
             }
         });
     }
+
+    function ButtonClick(event) {
+        const button = event.currentTarget;
+        const option = button.closest('.credit-option');
+        if (!option) return;
+
+        // 선택 표시 처리
+        document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+        selectedOption = option;
+
+        requestpay();
+    }
+
 
     // 크레딧 옵션 클릭 처리
     document.querySelectorAll('.credit-option').forEach(option => {
