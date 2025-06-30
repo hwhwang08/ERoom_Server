@@ -17,6 +17,7 @@ app.use(cors({
     credentials: true
 }));
 
+// 로컬시 필요
 // app.use('/img', express.static(path.join(__dirname, '../img')));
 
 
@@ -474,7 +475,7 @@ module.exports = app;
 
 // // 로컬테스트용 https
 // const https = require('https');
-//
+
 // const options = {
 //     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
 //     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
