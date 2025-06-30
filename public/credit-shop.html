@@ -26,7 +26,7 @@
 
         body {
             height: 1600px;
-            overflow-x: hidden;
+            overflow-x: hidden !important;
             font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
             /*background-color: #1c1d1f;*/
             background-color: #000;
@@ -230,9 +230,9 @@
             100% { transform: rotateY(360deg); }
         }
 
-        .credit-option:nth-of-type(1):hover .img_wrap {
-            animation: bangbang 3s linear infinite;
-        }
+        /*.credit-option:nth-of-type(1):hover .img_wrap {*/
+        /*    animation: bangbang 3s linear infinite;*/
+        /*}*/
 
         .credit-option:nth-of-type(6) .img_wrap {
             position: relative;
@@ -437,7 +437,6 @@
         }
     </style>
 </head>
-
 <body>
 <!-- 기존 HTML 구조 그대로 유지 -->
 <header id="header">
@@ -519,7 +518,6 @@
              data-aos-anchor-placement="top"></div>
     </div>
 </div>
-
 <script>
     // Firebase 초기화
     let db = null;
