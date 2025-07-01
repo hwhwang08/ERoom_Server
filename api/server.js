@@ -6,6 +6,7 @@ const querystring = require('querystring');
 const axios = require('axios');
 const app = express();
 const fs = require('fs');
+const session = require('express-session');
 // env파일불러오는 코드.
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -17,9 +18,17 @@ app.use(cors({
     credentials: true
 }));
 
-// 로컬시 필요
-// app.use('/img', express.static(path.join(__dirname, '../img')));
+app.use(session({
+    secret: 'your-secret-key', // 원하는 시크릿 키 문자열 추후 수정할것.
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        maxAge: 1000 * 60 * 30 // 30분
+    }
+}));
 
+// 로컬시 필요
+app.use('/img', express.static(path.join(__dirname, '../img')));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -349,6 +358,9 @@ app.get('/login', (req, res) => {
 app.get('/save-uid', (req, res) => {
     const token = req.query.token;
     const tokenInfo = tempTokens.get(token);
+    const credit = req.query.credit;
+
+    console.log("들어온 크레딧값 확인용", credit);
 
     if (!tokenInfo) return res.status(401).send('유효하지 않은 토큰');
 
@@ -358,11 +370,10 @@ app.get('/save-uid', (req, res) => {
     }
 
     const uid = tokenInfo.uid;
-
     // ✅ 토큰은 한번 쓰고 제거 (보안 위해)
     tempTokens.delete(token);
 
-    // ✅ 사용자 정보를 세션 또는 쿠키로 저장
+    // ✅ uid 쿠키로 저장
     res.cookie('uid', uid, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -370,10 +381,12 @@ app.get('/save-uid', (req, res) => {
         maxAge: 1000 * 60 * 30 // 30분 유효
     });
 
+    // ✅ credit 세션에 저장
+    if (credit) req.session.selectedCredit = credit;
+
     // ✅ 실제 크레딧샵 페이지로 리다이렉트
     res.redirect('/credit-shop');
 });
-
 
 app.get('/credit-shop', async (req, res) => {
     const uid = req.cookies.uid;
@@ -383,16 +396,26 @@ app.get('/credit-shop', async (req, res) => {
         const userRecord = await admin.auth().getUser(uid);
         console.log('✅ 로그인한 사용자 이메일:', userRecord.email);
 
+        const selectedCredit = req.session.selectedCredit || null;
         const email = userRecord.email;
 
         console.log(`✅ 로그인한 사용자: UID = ${uid}, EMAIL = ${email}`);
 
         const filePath = path.join(__dirname, '../public/credit-shop.html');
-        res.sendFile(filePath, (err) => {
+        // 한번 쓴 세션은 지우기
+        delete req.session.selectedCredit;
+        
+        fs.readFile(filePath, 'utf8', (err, data) => {
             if (err) {
-                console.error('login.html 파일 오류:', err);
+                console.error('credit-shop.html 파일 오류:', err);
                 res.status(500).send('로그인 페이지를 찾을 수 없습니다.');
             }
+
+            const injected = data.replace(
+                '</head>',
+                `<script>window.selectedCredit = "${selectedCredit}";</script></head>`
+            );
+            res.send(injected);
         });
     }catch (err) {
         console.error('사용자 정보를 가져오는 중 오류:', err);
@@ -471,7 +494,7 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 // Vercel에서는 module.exports로 내보내야 함
 module.exports = app;
 
-// // 로컬테스트용 https
+// 로컬테스트용 https
 // const https = require('https');
 //
 // const options = {
