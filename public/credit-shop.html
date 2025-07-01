@@ -566,60 +566,29 @@
         // Firebase 초기화
         await initializeFirebase();
 
-        const uid = sessionStorage.getItem('userUid'); // 서버에서 전달한 UID
-        const selectedCredit = sessionStorage.getItem('selectedCredit');
+        let uid ='';
 
-        console.log('크샵 유아이디 값:', uid);
-        console.log('선택된 크레딧:', selectedCredit);
-
-        if (!uid) return window.location.href = '/login';
-
-        // Firebase가 초기화된 경우에만 사용자 정보 조회
+        // 파베 초기화 된 경우에만 사용자 정보 조회 가능케
         if (firebaseInitialized && db) {
             try {
-                const snapshot = await db.collection('Users').where('UserId','==',uid).get();
+                const res = await fetch('/user-info');
+                if (!res.ok) new Error('사용자 정보를 불러올 수 없음. 크레딧샵');
+                const data = await res.json();
 
-                if (!snapshot.empty) {
-                    const userData = snapshot.docs[0].data();
+                const email = data.email || '';
+                const userId = email.split('@')[0];  // @ 앞부분
 
-                    currentUserEmail = userData.Email;
-                    currentUserName = userData.Username;
-                    document.getElementById('user-id').textContent = currentUserName;
+                const userIdSpan = document.getElementById('user-id');
+                if (userIdSpan) userIdSpan.textContent = userId;
 
-                    console.log('✅ 사용자 이름:', currentUserName);
-                    console.log('✅ 사용자 이메일:', currentUserEmail);
-                } else window.location.href = '/login';
-            } catch (error) {
-                console.error('❌ 사용자 정보 조회 실패:', error);
-                console.error('❌ 에러 코드:', error.code);
-                console.error('❌ 에러 메시지:', error.message);
+                console.log('✅ 크샵 uid 값:', data.uid);
+                uid = data.uid;
+            } catch (err) {
+                console.error('UID를 불러오는 중 오류:', err);
+                console.error('에러코드', err.code);
+                console.error('에러메시지', err.message);
             }
-        } else alert('Firebase 비활성화됨. 크샵이');
-
-        // 특정 크레딧이 선택된 경우 자동으로 해당 옵션 선택 및 결제 진행
-        if (selectedCredit && selectedCredit !== 'null') {
-            const targetOption = document.querySelector(`[data-credit="${selectedCredit}"]`);
-            if (targetOption) {
-                // 옵션 선택
-                document.querySelectorAll('.credit-option').forEach(opt => opt.classList.remove('selected'));
-                targetOption.classList.add('selected');
-                selectedOption = targetOption;
-
-                // 상품 정보 표시
-                const productName = targetOption.querySelector('.credit-amount').textContent;
-                const price = targetOption.getAttribute('data-price');
-                document.querySelector('.pay-product').textContent = `${productName}`;
-                document.querySelector('.pay-amount').textContent = `${Number(price).toLocaleString()}원`;
-
-                // 잠깐 대기 후 자동으로 결제 진행
-                document.getElementById('pg-modal').classList.remove('hidden');
-
-
-                // console.log(`${selectedCredit} 크레딧 자동 결제 시작`);
-                // requestpay();
-            }
-            // sessionStorage에서 selectedCredit 제거 (한 번만 사용)
-            sessionStorage.removeItem('selectedCredit');
+            if (!uid) return window.location.href = '/login';
         }
     });
 
@@ -675,7 +644,9 @@
         if (!firebaseInitialized || !db) return console.warn('⚠️ Firebase가 초기화되지 않았습니다.');
 
         try {
-            const userId = sessionStorage.getItem('userUid'); // 현재 로그인한 사용자 UID
+            const res = await fetch('/user-info');
+            const data = await res.json();
+            const userId = data.uid; // 현재 로그인한 사용자 UID
             const userName = decodeURIComponent(nickname);
 
             const now = new Date();
@@ -711,7 +682,6 @@
     }
 
     // HTTP 방식으로 success 페이지에 데이터 전달하는 함수도 전역으로 정의
-    // redirectToSuccessWithHttpData 함수를 이것으로 교체
     function redirectSuccess(paymentData, nickname) {
         console.log('💾 sessionStorage에 결제 정보 저장');
         console.log('📊 원본 paymentData:', paymentData);

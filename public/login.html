@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>사용자 인증</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- firebase-config.js 제거 -->
+<!--    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>-->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <!-- 기존 스타일 유지 -->
     <style>
         * {
@@ -164,27 +164,29 @@
 <div class="container">
     <h1>사용자 인증</h1>
     <p id="main-message">사용자 ID를 입력하여 계속하세요.</p>
-    
     <div class="error-alert" id="error-alert">
         <strong>오류:</strong> <span id="error-alert-message"></span>
     </div>
-    
+
     <form id="user-form">
         <div class="form-group">
-            <label for="user-id">사용자 ID (UID)</label>
-            <input type="text" id="user-id" name="userId" placeholder="사용자 ID를 입력하세요" required>
+            <label for="email">이메일</label>
+            <input type="email" id="email" name="email" placeholder="이메일을 입력하세요" required>
         </div>
-
+        <div class="form-group">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" name="password" placeholder="비밀번호를 입력하세요" required>
+        </div>
         <button type="submit" id="submit-button">
-            <span id="button-text">계속하기</span>
+            <span id="button-text">로그인</span>
             <div class="loader" id="loader"></div>
         </button>
     </form>
 </div>
 
 <script>
-    let db = null;
     let firebaseInitialized = false;
+    let auth = null;
 
     // Firebase 설정을 서버에서 가져와서 초기화
     async function initializeFirebase() {
@@ -192,14 +194,11 @@
             const response = await fetch('/firebase-config');
             const firebaseConfig = await response.json();
 
-            // console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
-
-            // databaseURL만 있어도 Firestore 연결 시도
-            // if (typeof firebase !== 'undefined' && firebaseConfig.databaseURL) {
-
+            console.log('Firebase 설정 응답:', firebaseConfig); // 디버그용
             if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
                 firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
+                auth = firebase.auth();  // 인증 객체 생성
+
                 firebaseInitialized = true;
                 console.log('✅ 로그인 페이지에서 Firebase 클라이언트 초기화 성공');
             } else {
@@ -215,21 +214,22 @@
         await initializeFirebase();
 
         const form = document.getElementById('user-form');
-        const userIdInput = document.getElementById('user-id');
         const errorAlert = document.getElementById('error-alert');
         const errorAlertMessage = document.getElementById('error-alert-message');
         const submitButton = document.getElementById('submit-button');
         const buttonText = document.getElementById('button-text');
         const loader = document.getElementById('loader');
 
+
         // 폼 제출 처리
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const userId = userIdInput.value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
 
-            if (!userId) {
-                showError('사용자 ID를 입력해주세요.');
+            if (!email || !password) {
+                showError('이메일과 비밀번호를 모두 입력해주세요.');
                 return;
             }
 
@@ -238,28 +238,28 @@
             hideError();
 
             try {
-                if (firebaseInitialized && db) {
-                    // Firebase에서 사용자 확인
-                    const querySnapshot = await db.collection('Users')
-                        .where("UserId", "==", userId)
-                        .get();
+                if (firebaseInitialized && auth) {
+                    // Firebase Authentication 로그인 시도
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    console.log('✅ 로그인 성공:', user.email);
 
-                    if (!querySnapshot.empty) {
-                        console.log('✅ Firebase에서 사용자 확인 완료:', userId);
-                        sessionStorage.setItem('uid', userId);
-                        window.location.href = '/save-uid?uid=' + encodeURIComponent(userId);
-                    } else {
-                        showError(`사용자 ID "${userId}"가 등록되지 않았습니다.`);
-                        setLoading(false);
-                    }
+                    // 필요한 경우 sessionStorage 등에 저장
+                    sessionStorage.setItem('uid', user.uid);
+                    // window.location.href = '/save-uid?uid=' + encodeURIComponent(user.uid);
+                    window.location.href = '/credit-shop'
                 } else {
-                    // Firebase 비활성화 시 서버로 직접 요청
-                    console.log('🔄 Firebase 비활성화 - 서버로 요청');
-                    window.location.href = '/save-uid?uid=' + encodeURIComponent(userId);
+                    showError('Firebase 인증이 초기화되지 않았습니다.');
+                    setLoading(false);
                 }
+                // } else {
+                //     // Firebase 비활성화 시 서버로 직접 요청
+                //     console.log('🔄 Firebase 비활성화 - 서버로 요청');
+                //     window.location.href = '/save-uid?uid=' + encodeURIComponent(userId);
+                // }
             } catch (error) {
-                console.error('❌ 사용자 확인 오류:', error);
-                showError('사용자 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+                console.error('❌ 로그인 실패:', error);
+                showError('로그인 실패: ' + error.message);
                 setLoading(false);
             }
         });

@@ -144,7 +144,7 @@
         <p>문의사항이 있으시면 고객센터로 연락해주세요.</p>
     </div>
 
-    <a id="back-to-shop" class="back-button" href="/">크레딧 상점으로 돌아가기</a>
+    <a id="back-to-shop" class="back-button" href="/credit-shop">크레딧 상점으로 돌아가기</a>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -220,7 +220,7 @@
     function showError() {
         document.getElementById('errorMessage').style.display = 'block';
         // 3초 후 자동으로 메인 페이지로 이동
-        setTimeout(() => { window.location.href = '/'; }, 3000);
+        setTimeout(() => { window.location.href = '/credit-shop'; }, 3000);
     }
 
     async function sendPurchaseInfo(nickname, creditAmount, amount) {
