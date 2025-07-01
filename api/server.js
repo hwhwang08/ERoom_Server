@@ -71,34 +71,6 @@ function generateTempToken() {
     return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-async function checkUserExists(uid) {
-    // 임시 사용자 확인 함수 (Firebase 없이)
-    if (firebaseInitialized) console.log('📝 Firebase 활성화.');
-
-    try {
-        console.log('🔍 Firebase에서 사용자 검색:', uid);
-        const userdata = await admin.firestore().collection('Users')
-            .where("UserId", "==", uid)
-            .get();
-
-        if (userdata.empty) {
-            console.log('❌ Firebase에서 사용자를 찾을 수 없음:', uid);
-            return { userExists: false, userdata: [] };
-        }
-
-        const userData = userdata.docs[0].data();
-        console.log('✅ Firebase에서 사용자 찾음:', userData.nickname);
-
-        return {
-            userExists: true,
-            userdata: [userData]
-        };
-    } catch (error) {
-        console.error('❌ Firebase 유저 확인 오류:', error);
-        return { userExists: false, userdata: [] };
-    }
-}
-
 // 아임포트 관련 함수들
 async function verifyPayment(imp_uid) {
     try {
@@ -261,23 +233,29 @@ app.get('/health', (req, res) => {
     });
 });
 
+const tempTokens = new Map(); // 임시로 uid 저장
 // 기본 라우트들
 app.get('/verify-token', async (req, res) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
             success: false,
-            message: 'Authorization 헤더가 없습니다.'
+            message: 'Authorization 헤더 읎음.'
         });
     }
 
-    if (!firebaseInitialized) console.log('파베 인식 안됨');
-
     const idToken = authHeader.split('Bearer ')[1].trim();
+
     try {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         const uid = decodedToken.uid;
-        const result = await checkUserExists(uid);
+
+        // ✅ accessToken 발급
+        const accessToken = Math.random().toString(36).substring(2);
+        tempTokens.set(accessToken, {
+            uid,
+            expiresAt: Date.now() + 1000 * 60 * 3 // 3분 유효
+        });
 
         const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
         const host = req.headers['x-forwarded-host'] || req.get('host');
@@ -287,7 +265,7 @@ app.get('/verify-token', async (req, res) => {
             success: true,
             uid,
             message: '서버에서 응답!! 토큰 검증 성공!!',
-            redirectUrl: `${baseUrl}/save-uid?uid=${uid}`
+            redirectUrl: `${baseUrl}/save-uid?token=${accessToken}`
         });
     } catch (err) {
         console.error('토큰 검증 오류:', err);
@@ -358,31 +336,6 @@ app.get('/payment-complete', async (req, res) => {
     }
 });
 
-app.get('/save-uid', async (req, res) => {
-    const uidParam = req.query.uid;
-    const creditParam = req.query.credit;
-
-    console.log("들어온 uid값 확인용", uidParam);
-    console.log("들어온 크레딧값 확인용", creditParam);
-
-    const result = await checkUserExists(uidParam);
-
-    if (result.userExists) {
-        res.cookie('uid', uidParam, {
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
-        });
-        // 크레딧 파라미터가 있으면 URL에 추가해서 리다이렉트
-        let redirectUrl = '/';
-        if (creditParam) redirectUrl += `?credit=${creditParam}`;
-
-        console.log("!!! url확인용", redirectUrl);
-        res.redirect(redirectUrl);
-    } else res.status(404).send('해당 UID의 유저를 찾을 수 없습니다.');
-});
-
 app.get('/login', (req, res) => {
     const filePath = path.join(__dirname, '../public/login.html');
     res.sendFile(filePath, (err) => {
@@ -393,37 +346,82 @@ app.get('/login', (req, res) => {
     });
 });
 
+app.get('/save-uid', (req, res) => {
+    const token = req.query.token;
+    const tokenInfo = tempTokens.get(token);
+
+    if (!tokenInfo) return res.status(401).send('유효하지 않은 토큰');
+
+    if (Date.now() > tokenInfo.expiresAt) {
+        tempTokens.delete(token);
+        return res.status(401).send('토큰 만료');
+    }
+
+    const uid = tokenInfo.uid;
+
+    // ✅ 토큰은 한번 쓰고 제거 (보안 위해)
+    tempTokens.delete(token);
+
+    // ✅ 사용자 정보를 세션 또는 쿠키로 저장
+    res.cookie('uid', uid, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 30 // 30분 유효
+    });
+
+    // ✅ 실제 크레딧샵 페이지로 리다이렉트
+    res.redirect('/credit-shop');
+});
+
+
+app.get('/credit-shop', async (req, res) => {
+    const uid = req.cookies.uid;
+    if (!uid) return res.status(401).send('로그인 정보 없음');
+
+    try {
+        const userRecord = await admin.auth().getUser(uid);
+        console.log('✅ 로그인한 사용자 이메일:', userRecord.email);
+
+        const email = userRecord.email;
+
+        console.log(`✅ 로그인한 사용자: UID = ${uid}, EMAIL = ${email}`);
+
+        const filePath = path.join(__dirname, '../public/credit-shop.html');
+        res.sendFile(filePath, (err) => {
+            if (err) {
+                console.error('login.html 파일 오류:', err);
+                res.status(500).send('로그인 페이지를 찾을 수 없습니다.');
+            }
+        });
+    }catch (err) {
+        console.error('사용자 정보를 가져오는 중 오류:', err);
+        return res.status(500).send('사용자 정보 조회 실패');
+    }
+});
+
+// 크샵 uid값 띄우는 코드.
+app.get('/user-info', async (req, res) => {
+    const uid = req.cookies.uid;
+    if (!uid) return res.status(401).json({ error: '로그인 필요' });
+
+    try {
+        const userRecord = await admin.auth().getUser(uid);
+        const email = userRecord.email;
+        return res.json({ uid, email });
+    } catch (err) {
+        console.error('사용자 정보 조회 실패:', err);
+        return res.status(500).json({ error: '사용자 정보 조회 실패' });
+    }
+});
+
 app.get('/', async (req, res) => {
-    const uid = req.cookies?.uid;
-    const creditParam = req.query.credit; // URL에서 크레딧 파라미터 가져오기
-    console.log("uid랑 크레딧 값 확인", uid, creditParam)
-
-    if (!uid) return res.sendFile(path.join(__dirname, '../public/login.html'));
-
-    const result = await checkUserExists(uid);
-    if (!result.userExists) return res.sendFile(path.join(__dirname, '../public/login.html'));
-
-    const nickname = result.userdata[0]?.nickname || '익명';
-    const htmlPath = path.join(__dirname, '../public/credit-shop.html');
-
-    fs.readFile(htmlPath, 'utf8', (err, data) => {
+    const filePath = path.join(__dirname, '../public/login.html');
+    res.sendFile(filePath, (err) => {
         if (err) {
-            console.error('파일 읽기 오류:', err);
-            return res.status(500).send('파일 오류');
+            console.error('login.html 파일 오류:', err);
+            res.status(500).send('로그인 페이지를 찾을 수 없습니다.');
         }
-
-        const modifiedHtml = data.replace(
-            '</body>',
-            `<script>
-                const nickname = '${nickname.replace(/'/g, "\\'")}';
-                const uid = '${uid.replace(/'/g, "\\'")}';
-                const selectedCredit = ${creditParam || 'null'};
-                sessionStorage.setItem('userId', nickname);
-                sessionStorage.setItem('userUid', uid);
-                sessionStorage.setItem('selectedCredit', selectedCredit);
-            </script></body>`
-        );
-        res.send(modifiedHtml);
     });
 });
 
@@ -475,7 +473,7 @@ module.exports = app;
 
 // // 로컬테스트용 https
 // const https = require('https');
-
+//
 // const options = {
 //     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
 //     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
