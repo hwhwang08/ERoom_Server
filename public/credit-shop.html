@@ -719,7 +719,7 @@
 
             // user_Payment 컬렉션에 문서 추가
             // 문서 참조를 먼저 생성
-            const docRef = db.collection('user_Payment').doc(formattedTimestamp);
+            const docRef = db.collection('Log').doc(formattedTimestamp);
             // set() 호출 (반환값 없음)
             await docRef.set(paymentDocument);
 
