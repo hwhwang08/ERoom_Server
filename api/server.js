@@ -467,12 +467,12 @@ app.post('/webhook', async (req, res) => {
 
             if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
                 // 환불 처리 로직 (예: 상태 업데이트)
-                const paymentRef = db.collection('user_Payment').doc(userUid);
-                await paymentRef.update({
-                    paymentStatus: 'refunded',
-                    refundAmount: parseInt(amount) || 0,
-                    refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-                });
+                // const paymentRef = db.collection('User').doc(userUid);
+                // await paymentRef.update({
+                //     paymentStatus: 'refunded',
+                //     refundAmount: parseInt(amount) || 0,
+                //     refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+                // });
 
                 console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
             }
