@@ -344,18 +344,19 @@ app.get('/user-info', async (req, res) => {
 
 // 파베에 결제 내역 저장.
 app.post('/verify-and-store-payment', async (req, res) => {
-    const authHeader = req.headers['authorization'];
-    const nickname = decodeURIComponent(authHeader?.replace('Bearer ', '') || '');
-
-    const uid = req.cookies.uid;
-    if (!uid) return res.status(401).json({ error: '로그인 필요' });
-
-    const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.body;
-
     try {
+        const authHeader = req.headers['authorization'];
+        const nickname = decodeURIComponent(authHeader?.replace('Bearer ', '') || '');
+
+        const uid = req.cookies.uid;
+        if (!uid) return res.status(401).json({ success: false, message: '로그인 필요' });
+        console.log("파베에 저장전 유저 uid확인", uid)
+
+        const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.body;
+
         // 🔐 결제 진위 검증 로직도 추가하는 게 좋음 (ex. 아임포트 REST API로 imp_uid 검증)
         const now = new Date();
-        const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, ':').replace(/\..+/, '') + ':' + now.getMilliseconds();
+        const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, ':').replace(/\..+/, '') + now.getMilliseconds();
 
         const paymentDocument = {
             userUid: uid,
@@ -371,9 +372,37 @@ app.post('/verify-and-store-payment', async (req, res) => {
             timestamp: 'payment_' + now.toISOString()
         };
 
+        // 💾 1. 결제 로그 저장
         await admin.firestore().collection('Log').doc('payment_' + timestamp).set(paymentDocument);
-        res.json({ success: true, message: '결제 정보 저장 완료' });
 
+        // 💰 2. Users 컬렉션에서 해당 유저의 기존 credit을 가져오기
+        const userRef = admin.firestore().collection('User').doc(uid);
+        const userSnap = await userRef.get();
+
+        let currentCredit = 0;
+        if (userSnap.exists) {
+            const userData = userSnap.data();
+            currentCredit = userData.credit || 0;
+        }
+
+        // 새로 결제한 금액(creditAmount)을 기존 크레딧에 더함.
+        const newCredit = currentCredit + parseInt(creditAmount);
+
+        // 🔄 3. 여기가 credits필드 업데이트 하는부분. 파베에 크레딧 값 저장한다!!!
+        await userRef.update({ credits: newCredit });
+
+        // 디버기용으로 데이터들 보냄.
+        res.json({ success: true, message: '결제 정보 및 크레딧 업데이트 완료',
+            savedData: {
+                nickname,
+                orderId,
+                amount,
+                orderName,
+                method,
+                creditAmount,
+                newCredit
+            }
+        });
     } catch (error) {
         console.error('❌ 서버 결제 저장 실패:', error);
         res.status(500).json({ success: false, message: '결제 저장 중 오류' });
@@ -490,35 +519,6 @@ app.post('/webhook', async (req, res) => {
         return res.status(500).send({ success: false, message: '서버 오류' });
     }
 });
-
-// 수동 환불 처리 API 추가
-app.post('/admin/refund', async (req, res) => {
-    const { imp_uid, reason } = req.body;
-
-    if (!imp_uid) {
-        return res.status(400).json({
-            success: false,
-            message: 'imp_uid가 필요합니다'
-        });
-    }
-
-    try {
-        const refundResult = await processRefund(imp_uid, reason);
-
-        res.json({
-            success: true,
-            message: '환불 처리 완료',
-            data: refundResult
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: '환불 처리 실패',
-            error: error.message
-        });
-    }
-});
-
 
 // 에러 처리
 app.use((err, req, res, next) => {
