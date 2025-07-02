@@ -717,9 +717,9 @@
 
             console.log('💾 파이어베이스에 저장할 결제 데이터:', paymentDocument);
 
-            // user_Payment 컬렉션에 문서 추가
+            // Log 컬렉션에 문서 추가
             // 문서 참조를 먼저 생성
-            const docRef = db.collection('Log').doc(formattedTimestamp);
+            const docRef = db.collection('Log').doc('payment_'+formattedTimestamp);
             // set() 호출 (반환값 없음)
             await docRef.set(paymentDocument);
 
