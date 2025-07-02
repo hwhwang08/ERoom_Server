@@ -232,23 +232,6 @@ app.post('/purchase', (req, res) => {
     });
 });
 
-app.get('/payment-complete', async (req, res) => {
-    const { imp_uid, merchant_uid } = req.query;
-
-    if (!imp_uid || !merchant_uid) return res.status(400).send('잘못된 요청입니다.');
-
-    try {
-        const verified = await verifyPayment(imp_uid);
-        const redirectUrl = verified
-            ? `/success?imp_uid=${imp_uid}&merchant_uid=${merchant_uid}`
-            : `/fail.html?imp_uid=${imp_uid}&merchant_uid=${merchant_uid}`;
-        res.redirect(redirectUrl);
-    } catch (err) {
-        console.error('결제 검증 오류:', err);
-        res.status(500).send('서버 오류 발생');
-    }
-});
-
 app.get('/login', (req, res) => {
     const filePath = path.join(__dirname, '../public/login.html');
     res.sendFile(filePath, (err) => {
@@ -453,6 +436,8 @@ app.post('/webhook', async (req, res) => {
         amount,
         pay_method,
         custom_data // 여기에 uid가 들어있다고 가정
+        // cancelled로 옴.
+        // cancelled_id이고.
     } = body;
 
     try {
@@ -487,9 +472,22 @@ app.post('/webhook', async (req, res) => {
             // 보통 환불은 기존 결제 문서를 찾아서 상태 업데이트 또는 새로운 환불 문서 생성
             // 여기서는 결제 문서 업데이트 예시 (merchant_uid 기반 문서 찾기 필요)
 
-            console.log("uid확인 ", req.cookies.uid);
+            // console.log("uid확인 ", req.cookies.uid);
 
-            const paymentRef = db.collection('user_Payment').doc(req.cookies.uid);
+            // 변경 코드 ====================
+            const userUid = custom_data?.uid;
+            console.log("uid확인 ", userUid);
+
+            if (!userUid) {
+                // uid 없으면 에러 처리
+                console.error('❌ 사용자 UID가 없습니다.');
+                return res.status(400).send({ success: false, message: '사용자 UID 누락' });
+            }
+
+            const paymentRef = db.collection('user_Payment').doc(userUid);
+
+            // =====================
+
             const paymentSnap = await paymentRef.get();
 
             if (paymentSnap.exists) {
