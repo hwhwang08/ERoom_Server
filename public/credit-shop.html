@@ -711,8 +711,8 @@
                 paymentKey: paymentData.paymentKey,
                 creditAmount: parseInt(paymentData.creditAmount),
                 paymentStatus: 'completed',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                timestamp: now.toISOString()
+                // createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                timestamp: 'payment' + now.toISOString()
             };
 
             console.log('💾 파이어베이스에 저장할 결제 데이터:', paymentDocument);
