@@ -382,11 +382,15 @@ app.post('/verify-and-store-payment', async (req, res) => {
         let currentCredit = 0;
         if (userSnap.exists) {
             const userData = userSnap.data();
-            currentCredit = userData.credit || 0;
+            currentCredit = userData.credits || 0;
+            console.log('✅ 현재 유저 크레딧:', currentCredit);
+            console.log('💰 새로 산 크레딧:', creditAmount);
         }
 
         // 새로 결제한 금액(creditAmount)을 기존 크레딧에 더함.
         const newCredit = currentCredit + parseInt(creditAmount);
+
+        console.log('🧮 계산된 크레딧:', currentCredit, '+', creditAmount, '=', newCredit);
 
         // 🔄 3. 여기가 credits필드 업데이트 하는부분. 파베에 크레딧 값 저장한다!!!
         await userRef.update({ credits: newCredit });
@@ -425,8 +429,10 @@ app.get('/success', (req, res) => {
     const filePath = path.join(__dirname, '../public/success.html');
     res.sendFile(filePath, (err) => {
         if (err) {
-            console.error('success.html 읽기 오류:', err);
-            return res.status(500).send('파일 읽기 오류');
+            if (!res.headersSent) { // ✅ 응답이 아직 안 보냈을 경우만 처리
+                console.error('success.html 읽기 오류:', err);
+                res.status(500).send('파일 읽기 오류');
+            }
         }
     });
 });
