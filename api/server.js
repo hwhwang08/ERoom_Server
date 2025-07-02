@@ -342,6 +342,45 @@ app.get('/user-info', async (req, res) => {
     }
 });
 
+// 파베에 결제 내역 저장.
+app.post('/verify-and-store-payment', async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const nickname = decodeURIComponent(authHeader?.replace('Bearer ', '') || '');
+
+    const uid = req.cookies.uid;
+    if (!uid) return res.status(401).json({ error: '로그인 필요' });
+
+    const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.body;
+
+    try {
+        // 🔐 결제 진위 검증 로직도 추가하는 게 좋음 (ex. 아임포트 REST API로 imp_uid 검증)
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, ':').replace(/\..+/, '') + ':' + now.getMilliseconds();
+
+        const paymentDocument = {
+            userUid: uid,
+            userName: nickname,
+            orderId,
+            amount: parseInt(amount),
+            orderName,
+            paymentMethod: method,
+            paymentKey,
+            creditAmount: parseInt(creditAmount),
+            paymentStatus: 'completed',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: 'payment_' + now.toISOString()
+        };
+
+        await admin.firestore().collection('Log').doc('payment_' + timestamp).set(paymentDocument);
+        res.json({ success: true, message: '결제 정보 저장 완료' });
+
+    } catch (error) {
+        console.error('❌ 서버 결제 저장 실패:', error);
+        res.status(500).json({ success: false, message: '결제 저장 중 오류' });
+    }
+});
+
+
 // 안쓰이긴할텐데 혹여나 넣음
 app.get('/credit-shop', async (req, res) => {
     const filePath = path.join(__dirname, '../public/credit-shop.html');
