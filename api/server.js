@@ -19,7 +19,7 @@ app.use(cors({
 }));
 
 app.use(session({
-    secret: 'your-secret-key', // 원하는 시크릿 키 문자열 추후 수정할것.
+    secret: process.env.SESSION_Key,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -45,7 +45,7 @@ console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 
 // Firebase 초기화 부분 수정
 let admin = require('firebase-admin');
-const db = admin.firestore();
+let db;
 let firebaseInitialized = false;
 
 try {
@@ -65,6 +65,7 @@ try {
                 databaseURL: "https://eroom-e6659-default-rtdb.asia-southeast1.firebasedatabase.app"
             });
             firebaseInitialized = true;
+            db = admin.firestore();
             console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
         }
     }
