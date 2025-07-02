@@ -692,38 +692,19 @@
         console.log("저장시작")
 
         try {
-            const res = await fetch('/user-info');
-            const data = await res.json();
-            const userId = data.uid; // 현재 로그인한 사용자 UID
-            const userName = decodeURIComponent(nickname);
+            // 서버로 전달해서 저장
+            const res = await fetch('/verify-and-store-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${nickname}`
+                },
+                body: JSON.stringify(paymentData)
+            });
 
-            const now = new Date();
-            const formattedTimestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '.' + now.getMilliseconds();
-
-            // user_Payment 컬렉션에 저장할 데이터
-            const paymentDocument = {
-                userUid: userId,
-                userName: userName,
-                orderId: paymentData.orderId,
-                amount: parseInt(paymentData.amount),
-                orderName: paymentData.orderName,
-                paymentMethod: paymentData.method,
-                paymentKey: paymentData.paymentKey,
-                creditAmount: parseInt(paymentData.creditAmount),
-                paymentStatus: 'completed',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                timestamp: 'payment_' + now.toISOString()
-            };
-
-            console.log('💾 파이어베이스에 저장할 결제 데이터:', paymentDocument);
-
-            // Log 컬렉션에 문서 추가
-            // 문서 참조를 먼저 생성
-            const docRef = db.collection('Log').doc('payment_'+formattedTimestamp);
-            // set() 호출 (반환값 없음)
-            await docRef.set(paymentDocument);
-
-            console.log('✅ 파이어베이스 결제 정보 저장 성공! 문서 ID:', docRef.id);
+            if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+            const result = await res.json();
+            console.log('✅ 서버에서 결제 정보 저장 성공:', result);
 
             // 결제는 성공했지만 저장 실패 시 에러 로그만 남기고 진행
         } catch (error) { console.error('❌ 파이어베이스 결제 정보 저장 실패:', error);}
