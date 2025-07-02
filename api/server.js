@@ -19,7 +19,7 @@ app.use(cors({
 }));
 
 app.use(session({
-    secret: 'your-secret-key', // 원하는 시크릿 키 문자열 추후 수정할것.
+    secret: process.env.SESSION_Key, // 원하는 시크릿 키 문자열 추후 수정할것.
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -45,6 +45,7 @@ console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 
 // Firebase 초기화 부분 수정
 let admin = require('firebase-admin');
+const db = admin.firestore();
 let firebaseInitialized = false;
 
 try {
@@ -79,7 +80,7 @@ async function getToken() {
             imp_key: IMP_API_KEY,
             imp_secret: IMP_API_SECRET
         });
-        
+
         if (data.code === 0) {
             return data.response.access_token;
         } else {
@@ -115,7 +116,7 @@ async function verifyPayment(imp_uid) {
 async function processRefund(imp_uid, reason = '사용자 요청') {
     try {
         const token = await getToken();
-        
+
         // 먼저 결제 정보 조회
         const paymentInfo = await verifyPayment(imp_uid);
         if (!paymentInfo) throw new Error('결제 정보를 찾을 수 없습니다');
@@ -127,7 +128,7 @@ async function processRefund(imp_uid, reason = '사용자 요청') {
             amount: paymentInfo.amount, // 전체 금액 환불
             checksum: paymentInfo.amount // 검증용
         }, {
-            headers: { 
+            headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
@@ -431,14 +432,18 @@ app.post('/iamport-webhook', async (req, res) => {
             }
 
             if (uid) {
-                await admin.database()
-                    .ref(`user_Payment/${uid}/${merchant_uid}`)
-                    .set(paymentData);
-                console.log(`✅ 결제 데이터 저장 완료: ${uid}/${merchant_uid}`);
+                const docRef = db
+                    .collection('user_Payment')
+                    .doc(uid)
+                    .collection('payments')  // ← 만약 하위 컬렉션을 쓴다면, 구조에 맞게 수정 필요
+                    .doc(merchant_uid);
+
+                await docRef.set(refundData, { merge: true });
+                console.log(`✅ Firestore 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
             }
         }
 
-        // 결제 취소/환불 시 처리
+        // 결제 취소(cancelled)/ 환불일때
         else if (status === 'cancelled') {
             console.log('🔄 환불 처리 웹훅');
 
@@ -471,9 +476,14 @@ app.post('/iamport-webhook', async (req, res) => {
             }
 
             // Firebase 업데이트
-            await admin.database()
-                .ref(`user_Payment/${uid}/${merchant_uid}`)
-                .update(refundData);
+            const docRef = db
+                .collection('user_Payment')
+                .doc(uid)
+                .collection('payments')  // ← 만약 하위 컬렉션을 쓴다면, 구조에 맞게 수정 필요
+                .doc(merchant_uid);
+
+            await docRef.set(refundData, { merge: true });
+            console.log(`✅ Firestore 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
 
             console.log(`✅ 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
 
@@ -488,36 +498,6 @@ app.post('/iamport-webhook', async (req, res) => {
     } catch (error) {
         console.error('❌ 웹훅 처리 중 오류:', error);
     }
-
-    // // 결제 취소(cancelled)일때 실행됨.
-    // if (body.status === 'cancelled') {
-    //     const {
-    //         imp_uid,
-    //         merchant_uid, // 콜렉션으로 따지면 orderId
-    //         cancel_amount,
-    //         cancelled_at,
-    //         reason,
-    //         buyer_name,
-    //         custom_data
-    //     } = body;
-    //
-    //     const refundData = {
-    //         paymentStatus: 'refunded', // 🔁 상태 업데이트
-    //         refundAmount: cancel_amount,
-    //         refundReason: reason || '사용자 요청',
-    //         refundedAt: new Date(cancelled_at * 1000).toISOString()
-    //     };
-    //
-    //     // ✅ custom_data에 uid가 담겨있다고 가정하고 사용
-    //     const parsedCustomData = typeof custom_data === 'string' ? JSON.parse(custom_data) : custom_data;
-    //     const uid = parsedCustomData?.uid;
-    //
-    //     if (!uid) return console.error('❌ uid 없음! custom_data에 포함시켜야 함');
-    //
-    //     admin.database().ref(`user_Payment/${uid}/${merchant_uid}`).update(refundData)
-    //         .then(() => console.log(`✅ 환불 데이터 업데이트 완료: ${uid} / ${merchant_uid}`))
-    //         .catch((err) => console.error('❌ Firebase 업데이트 실패:', err.message));
-    // }
 });
 
 // 수동 환불 처리 API 추가
