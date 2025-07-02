@@ -113,37 +113,7 @@ async function verifyPayment(imp_uid) {
         return false;
     }
 }
-// 환불 처리 함수
-async function processRefund(imp_uid, reason = '사용자 요청') {
-    try {
-        const token = await getToken();
 
-        // 먼저 결제 정보 조회
-        const paymentInfo = await verifyPayment(imp_uid);
-        if (!paymentInfo) throw new Error('결제 정보를 찾을 수 없습니다');
-
-        // 환불 요청
-        const { data } = await axios.post('https://api.iamport.kr/payments/cancel', {
-            imp_uid: imp_uid,
-            reason: reason,
-            amount: paymentInfo.amount, // 전체 금액 환불
-            checksum: paymentInfo.amount // 검증용
-        }, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (data.code === 0) {
-            console.log('✅ 환불 처리 성공:', data.response);
-            return data.response;
-        } else throw new Error(`환불 실패: ${data.message}`);
-    } catch (error) {
-        console.error('환불 처리 오류:', error);
-        throw error;
-    }
-}
 // Firebase 설정 라우트
 app.get('/firebase-config', (req, res) => {
     try {
@@ -413,31 +383,66 @@ app.post('/webhook', async (req, res) => {
 
     try {
         // 결제 성공은 Paid. .toLowerCase()는 대소문자 비교. paid로 올경우 대비
-        if (status.toLowerCase() === 'paid') {
-            const now = new Date();
-            const formattedTimestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '.' + now.getMilliseconds();
+        // if (status.toLowerCase() === 'paid') {
+        //     const now = new Date();
+        //     const formattedTimestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '.' + now.getMilliseconds();
+        //
+        //     // 파베에 저장할 값들
+        //     const paymentDoc = {
+        //         userUid: custom_data?.uid || '오류',
+        //         orderId: merchant_uid || 'unknown',
+        //         amount: isNaN(amountNum) ? 0 : amountNum,
+        //         orderName: '크레딧 충전',
+        //         paymentMethod: paymentMethodVal,
+        //         paymentKey: imp_uid || 'unknown',
+        //         creditAmount: parseInt(body.creditAmount || 0),
+        //         paymentStatus: 'completed',
+        //         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        //         timestamp: now.toISOString()
+        //     };
+        //
+        //     console.log('💾 Firestore에 저장할 웹훅 결제 정보:', paymentDoc);
+        //
+        //     // Firestore에 저장
+        //     await db.collection('Payment').doc(formattedTimestamp).set(paymentDoc);
+        //
+        //     return res.status(200).send({ success: true });
+        // }
+        if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+            // 환불 처리
+            // 보통 환불은 기존 결제 문서를 찾아서 상태 업데이트 또는 새로운 환불 문서 생성
+            // 여기서는 결제 문서 업데이트 예시 (merchant_uid 기반 문서 찾기 필요)
 
-            // 파베에 저장할 값들
-            const paymentDoc = {
-                userUid: custom_data?.uid || '오류',
-                orderId: merchant_uid || 'unknown',
-                amount: isNaN(amountNum) ? 0 : amountNum,
-                orderName: '크레딧 충전',
-                paymentMethod: paymentMethodVal,
-                paymentKey: imp_uid || 'unknown',
-                creditAmount: parseInt(body.creditAmount || 0),
-                paymentStatus: 'completed',
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                timestamp: now.toISOString()
-            };
+            console.log("uid확인 ", req.cookies.uid);
 
-            console.log('💾 Firestore에 저장할 웹훅 결제 정보:', paymentDoc);
+            const paymentRef = db.collection('user_Payment').doc(req.cookies.uid);
+            const paymentSnap = await paymentRef.get();
 
-            // Firestore에 저장
-            await db.collection('Payment').doc(formattedTimestamp).set(paymentDoc);
-
-            return res.status(200).send({ success: true });
-        } else {
+            if (paymentSnap.exists) {
+                await paymentRef.update({
+                    paymentStatus: 'refunded',
+                    refundAmount: parseInt(amount) || 0,
+                    refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    timestamp: now.toISOString()
+                });
+                console.log('💾 Firestore 환불 상태 업데이트 완료:', merchant_uid);
+                return res.status(200).send({success: true, message: '환불 처리 완료'});
+            } else {
+                // 결제 기록이 없으면 새로 저장할 수도 있음
+                const refundDoc = {
+                    userUid: custom_data?.uid || '오류',
+                    orderId: merchant_uid || 'unknown',
+                    refundAmount: parseInt(amount) || 0,
+                    paymentStatus: 'refunded',
+                    refundReason: '웹훅 환불 알림',
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    timestamp: now.toISOString()
+                };
+                await db.collection('Refunds').doc(formattedTimestamp).set(refundDoc);
+                console.log('💾 Firestore에 새 환불 문서 저장:', refundDoc);
+                return res.status(200).send({success: true, message: '새 환불 문서 저장 완료'});
+            }
+        }else {
             console.warn('⚠️ 웹훅에서 결제 상태가 paid가 아님:', status);
             return res.status(200).send({ success: false, message: '결제 상태가 paid가 아님' });
         }
