@@ -425,101 +425,114 @@ app.post('/success', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-    const body = req.body;
+    const { imp_uid, status, amount } = req.body;
+
+    if (!imp_uid) return res.status(400).send({ success: false, message: 'imp_uid 누락' });
     console.log('✅ 웹훅 요청 수신:', req.body);
 
-    // 아임포트에서 주는 기본 데이터
-    const {
-        imp_uid,
-        merchant_uid,
-        status, // paid / cancelled 등
-        amount,
-        pay_method,
-        custom_data // 여기에 uid가 들어있다고 가정
-        // cancelled로 옴.
-        // cancelled_id이고.
-    } = body;
+    // const body = req.body;
+
+    // 웹훅으로 들어오는것
+    // imp_uid: 'imp_025557212534', <<<<<<<<< 이걸로 해야할거같은데
+    //   merchant_uid: 'payment-1751461555928',
+    //   status: 'cancelled',
+    //   cancellation_id: '7NEX9CHCKPYNPXE1XY5G'
+
+    // 파베에 있는것.
+    // orderId
+    // "payment-1751461555928"
+    // orderName
+    // "2,000 크레딧"
+    // paymentKey
+    // "imp_025557212534"
+    // paymentStatus
+    // "completed"
+    // timestamp
+    // "payment_2025-07-02T13:06:15.371Z"
 
     try {
-        // 결제 성공은 Paid. .toLowerCase()는 대소문자 비교. paid로 올경우 대비
-        // if (status.toLowerCase() === 'paid') {
-        //     const now = new Date();
-        //     const formattedTimestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '.' + now.getMilliseconds();
-        //
-        //     // 파베에 저장할 값들
-        //     const paymentDoc = {
-        //         userUid: custom_data?.uid || '오류',
-        //         orderId: merchant_uid || 'unknown',
-        //         amount: isNaN(amountNum) ? 0 : amountNum,
-        //         orderName: '크레딧 충전',
-        //         paymentMethod: paymentMethodVal,
-        //         paymentKey: imp_uid || 'unknown',
-        //         creditAmount: parseInt(body.creditAmount || 0),
-        //         paymentStatus: 'completed',
-        //         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        //         timestamp: now.toISOString()
-        //     };
-        //
-        //     console.log('💾 Firestore에 저장할 웹훅 결제 정보:', paymentDoc);
-        //
-        //     // Firestore에 저장
-        //     await db.collection('Payment').doc(formattedTimestamp).set(paymentDoc);
-        //
-        //     return res.status(200).send({ success: true });
-        // }
-        if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
-            // 환불 처리
-            // 보통 환불은 기존 결제 문서를 찾아서 상태 업데이트 또는 새로운 환불 문서 생성
-            // 여기서는 결제 문서 업데이트 예시 (merchant_uid 기반 문서 찾기 필요)
+        // 1. Log 컬렉션에서 paymentKey가 imp_uid와 일치하는 문서 찾기
+        const querySnapshot = await db.collection('Log').where('paymentKey', '==', imp_uid).get();
 
-            // console.log("uid확인 ", req.cookies.uid);
+        if (querySnapshot.empty) {
+            console.log('해당 imp_uid에 해당하는 결제 기록이 없습니다.');
+            return res.status(404).send({ success: false, message: '결제 기록 없음' });
+        }
 
-            // 변경 코드 ====================
-            const userUid = custom_data?.uid;
-            console.log("uid확인 ", userUid);
+        // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
+        const docs = querySnapshot.docs;
+        for (const doc of docs) {
+            const paymentData = doc.data();
+            const userUid = paymentData.userUid;  // 유저 식별자
 
-            if (!userUid) {
-                // uid 없으면 에러 처리
-                console.error('❌ 사용자 UID가 없습니다.');
-                return res.status(400).send({ success: false, message: '사용자 UID 누락' });
-            }
-
-            const paymentRef = db.collection('user_Payment').doc(userUid);
-
-            // =====================
-
-            const paymentSnap = await paymentRef.get();
-
-            if (paymentSnap.exists) {
+            if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+                // 환불 처리 로직 (예: 상태 업데이트)
+                const paymentRef = db.collection('user_Payment').doc(userUid);
                 await paymentRef.update({
                     paymentStatus: 'refunded',
                     refundAmount: parseInt(amount) || 0,
                     refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    timestamp: now.toISOString()
                 });
-                console.log('💾 Firestore 환불 상태 업데이트 완료:', merchant_uid);
-                return res.status(200).send({success: true, message: '환불 처리 완료'});
-            } else {
-                // 결제 기록이 없으면 새로 저장할 수도 있음
-                const refundDoc = {
-                    userUid: custom_data?.uid || '오류',
-                    orderId: merchant_uid || 'unknown',
-                    refundAmount: parseInt(amount) || 0,
-                    paymentStatus: 'refunded',
-                    refundReason: '웹훅 환불 알림',
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                    timestamp: now.toISOString()
-                };
-                await db.collection('Refunds').doc(formattedTimestamp).set(refundDoc);
-                console.log('💾 Firestore에 새 환불 문서 저장:', refundDoc);
-                return res.status(200).send({success: true, message: '새 환불 문서 저장 완료'});
+
+                console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
             }
-        }else {
-            console.warn('⚠️ 웹훅에서 결제 상태가 paid가 아님:', status);
-            return res.status(200).send({ success: false, message: '결제 상태가 paid가 아님' });
         }
+
+        return res.status(200).send({ success: true, message: '환불 처리 완료' });
+
+        // if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+        //     // 환불 처리
+        //     // 보통 환불은 기존 결제 문서를 찾아서 상태 업데이트 또는 새로운 환불 문서 생성
+        //     // 여기서는 결제 문서 업데이트 예시 (merchant_uid 기반 문서 찾기 필요)
+        //
+        //     // console.log("uid확인 ", req.cookies.uid);
+        //
+        //     // 변경 코드 ====================
+        //     // const userUid = custom_data?.uid;
+        //     // console.log("uid확인 ", userUid);
+        //     //
+        //     // if (!userUid) {
+        //     //     // uid 없으면 에러 처리
+        //     //     console.error('❌ 사용자 UID가 없습니다.');
+        //     //     return res.status(400).send({ success: false, message: '사용자 UID 누락' });
+        //     // }
+        //
+        //     const paymentRef = db.collection('Log').doc(userUid);
+        //
+        //     // =====================
+        //
+        //     const paymentSnap = await paymentRef.get();
+        //
+        //     if (paymentSnap.exists) {
+        //         await paymentRef.update({
+        //             paymentStatus: 'refunded',
+        //             refundAmount: parseInt(amount) || 0,
+        //             refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        //             timestamp: now.toISOString()
+        //         });
+        //         console.log('💾 Firestore 환불 상태 업데이트 완료:', merchant_uid);
+        //         return res.status(200).send({success: true, message: '환불 처리 완료'});
+        //     } else {
+        //         // 결제 기록이 없으면 새로 저장할 수도 있음
+        //         const refundDoc = {
+        //             userUid: custom_data?.uid || '오류',
+        //             orderId: merchant_uid || 'unknown',
+        //             refundAmount: parseInt(amount) || 0,
+        //             paymentStatus: 'refunded',
+        //             refundReason: '웹훅 환불 알림',
+        //             createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        //             timestamp: now.toISOString()
+        //         };
+        //         await db.collection('Refunds').doc(formattedTimestamp).set(refundDoc);
+        //         console.log('💾 Firestore에 새 환불 문서 저장:', refundDoc);
+        //         return res.status(200).send({success: true, message: '새 환불 문서 저장 완료'});
+        //     }
+        // }else {
+        //     console.warn('⚠️ 웹훅에서 결제 상태가 paid가 아님:', status);
+        //     return res.status(200).send({ success: false, message: '결제 상태가 paid가 아님' });
+        // }
     } catch (error) {
-        console.error('❌ Firestore 저장 실패:', error);
+        console.error('❌ 환불 처리 중 오류:', error);
         return res.status(500).send({ success: false, message: '서버 오류' });
     }
 });
