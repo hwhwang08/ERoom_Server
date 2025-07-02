@@ -72,17 +72,36 @@ try {
     console.log('💡 Firebase 기능은 비활성화됩니다.');
 }
 
-// 아임포트 관련 함수들
+// 아임포트 토큰 발급 함수 추가
+async function getToken() {
+    try {
+        const { data } = await axios.post('https://api.iamport.kr/users/getToken', {
+            imp_key: IMP_API_KEY,
+            imp_secret: IMP_API_SECRET
+        });
+        
+        if (data.code === 0) {
+            return data.response.access_token;
+        } else {
+            throw new Error('토큰 발급 실패');
+        }
+    } catch (error) {
+        console.error('아임포트 토큰 발급 오류:', error);
+        throw error;
+    }
+}
+
+// 기존 verifyPayment 함수 수정
 async function verifyPayment(imp_uid) {
     try {
         const token = await getToken();
         const { data } = await axios.get(`https://api.iamport.kr/payments/${imp_uid}`, {
-            headers: { Authorization: token }
+            headers: { Authorization: `Bearer ${token}` } // Bearer 추가
         });
 
         if (data.code === 0 && data.response.status === 'paid') {
             console.log("!!결제 성공!")
-            return true;
+            return data.response; // 전체 결제 정보 반환
         } else {
             console.log("!!결제 실패!")
             return false;
@@ -90,6 +109,37 @@ async function verifyPayment(imp_uid) {
     } catch (error) {
         console.error('결제 검증 오류:', error);
         return false;
+    }
+}
+// 환불 처리 함수
+async function processRefund(imp_uid, reason = '사용자 요청') {
+    try {
+        const token = await getToken();
+        
+        // 먼저 결제 정보 조회
+        const paymentInfo = await verifyPayment(imp_uid);
+        if (!paymentInfo) throw new Error('결제 정보를 찾을 수 없습니다');
+
+        // 환불 요청
+        const { data } = await axios.post('https://api.iamport.kr/payments/cancel', {
+            imp_uid: imp_uid,
+            reason: reason,
+            amount: paymentInfo.amount, // 전체 금액 환불
+            checksum: paymentInfo.amount // 검증용
+        }, {
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (data.code === 0) {
+            console.log('✅ 환불 처리 성공:', data.response);
+            return data.response;
+        } else throw new Error(`환불 실패: ${data.message}`);
+    } catch (error) {
+        console.error('환불 처리 오류:', error);
+        throw error;
     }
 }
 // Firebase 설정 라우트
@@ -349,37 +399,155 @@ app.post('/iamport-webhook', async (req, res) => {
     const body = req.body;
 
     console.log('아임포트 웹훅 호출됨!', body);
+    console.log('🔔 아임포트 웹훅 수신:', JSON.stringify(body, null, 2));
 
-    // 결제 취소(cancelled)일때 실행됨.
-    if (body.status === 'cancelled') {
-        const {
-            imp_uid,
-            merchant_uid, // 콜렉션으로 따지면 orderId
-            cancel_amount,
-            cancelled_at,
-            reason,
-            buyer_name,
-            custom_data
-        } = body;
+    try {
+        // 웹훅 응답 우선 처리 (타임아웃 방지)
+        res.status(200).send('OK');
 
-        const refundData = {
-            paymentStatus: 'refunded', // 🔁 상태 업데이트
-            refundAmount: cancel_amount,
-            refundReason: reason || '사용자 요청',
-            refundedAt: new Date(cancelled_at * 1000).toISOString()
-        };
+        const { imp_uid, merchant_uid, status, custom_data } = body;
 
-        // ✅ custom_data에 uid가 담겨있다고 가정하고 사용
-        const parsedCustomData = typeof custom_data === 'string' ? JSON.parse(custom_data) : custom_data;
-        const uid = parsedCustomData?.uid;
+        // 결제 완료 시 처리
+        if (status === 'paid') {
+            console.log('💳 결제 완료 웹훅');
 
-        if (!uid) return console.error('❌ uid 없음! custom_data에 포함시켜야 함');
+            // Firebase에 결제 정보 저장
+            const paymentData = {
+                imp_uid,
+                merchant_uid,
+                status: 'completed',
+                paymentStatus: 'completed',
+                paidAt: new Date().toISOString(),
+                amount: body.amount,
+                custom_data: JSON.stringify({ uid: currentUserUid })
+            };
 
-        admin.database().ref(`user_Payment/${uid}/${merchant_uid}`).update(refundData)
-            .then(() => console.log(`✅ 환불 데이터 업데이트 완료: ${uid} / ${merchant_uid}`))
-            .catch((err) => console.error('❌ Firebase 업데이트 실패:', err.message));
+            // custom_data에서 uid 추출
+            let uid = null;
+            if (custom_data) {
+                const parsedCustomData = typeof custom_data === 'string' ?
+                    JSON.parse(custom_data) : custom_data;
+                uid = parsedCustomData?.uid;
+            }
+
+            if (uid) {
+                await admin.database()
+                    .ref(`user_Payment/${uid}/${merchant_uid}`)
+                    .set(paymentData);
+                console.log(`✅ 결제 데이터 저장 완료: ${uid}/${merchant_uid}`);
+            }
+        }
+
+        // 결제 취소/환불 시 처리
+        else if (status === 'cancelled') {
+            console.log('🔄 환불 처리 웹훅');
+
+            const {
+                cancel_amount,
+                cancelled_at,
+                reason,
+                buyer_name
+            } = body;
+
+            const refundData = {
+                paymentStatus: 'refunded',
+                refundAmount: cancel_amount,
+                refundReason: reason || '사용자 요청',
+                refundedAt: new Date(cancelled_at * 1000).toISOString(),
+                status: 'refunded'
+            };
+
+            // custom_data에서 uid 추출
+            let uid = null;
+            if (custom_data) {
+                const parsedCustomData = typeof custom_data === 'string' ?
+                    JSON.parse(custom_data) : custom_data;
+                uid = parsedCustomData?.uid;
+            }
+
+            if (!uid) {
+                console.error('❌ uid가 없어서 환불 처리 불가');
+                return;
+            }
+
+            // Firebase 업데이트
+            await admin.database()
+                .ref(`user_Payment/${uid}/${merchant_uid}`)
+                .update(refundData);
+
+            console.log(`✅ 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
+
+            // 필요하다면 사용자 크레딧도 차감
+            // await deductUserCredit(uid, creditAmount);
+        }
+
+        else {
+            console.log(`ℹ️ 기타 상태 웹훅: ${status}`);
+        }
+
+    } catch (error) {
+        console.error('❌ 웹훅 처리 중 오류:', error);
+    }
+
+    // // 결제 취소(cancelled)일때 실행됨.
+    // if (body.status === 'cancelled') {
+    //     const {
+    //         imp_uid,
+    //         merchant_uid, // 콜렉션으로 따지면 orderId
+    //         cancel_amount,
+    //         cancelled_at,
+    //         reason,
+    //         buyer_name,
+    //         custom_data
+    //     } = body;
+    //
+    //     const refundData = {
+    //         paymentStatus: 'refunded', // 🔁 상태 업데이트
+    //         refundAmount: cancel_amount,
+    //         refundReason: reason || '사용자 요청',
+    //         refundedAt: new Date(cancelled_at * 1000).toISOString()
+    //     };
+    //
+    //     // ✅ custom_data에 uid가 담겨있다고 가정하고 사용
+    //     const parsedCustomData = typeof custom_data === 'string' ? JSON.parse(custom_data) : custom_data;
+    //     const uid = parsedCustomData?.uid;
+    //
+    //     if (!uid) return console.error('❌ uid 없음! custom_data에 포함시켜야 함');
+    //
+    //     admin.database().ref(`user_Payment/${uid}/${merchant_uid}`).update(refundData)
+    //         .then(() => console.log(`✅ 환불 데이터 업데이트 완료: ${uid} / ${merchant_uid}`))
+    //         .catch((err) => console.error('❌ Firebase 업데이트 실패:', err.message));
+    // }
+});
+
+// 수동 환불 처리 API 추가
+app.post('/admin/refund', async (req, res) => {
+    const { imp_uid, reason } = req.body;
+
+    if (!imp_uid) {
+        return res.status(400).json({
+            success: false,
+            message: 'imp_uid가 필요합니다'
+        });
+    }
+
+    try {
+        const refundResult = await processRefund(imp_uid, reason);
+
+        res.json({
+            success: true,
+            message: '환불 처리 완료',
+            data: refundResult
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: '환불 처리 실패',
+            error: error.message
+        });
     }
 });
+
 
 // 에러 처리
 app.use((err, req, res, next) => {
