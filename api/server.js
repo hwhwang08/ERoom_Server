@@ -28,7 +28,7 @@ app.use(session({
 }));
 
 // 로컬시 필요
-app.use('/img', express.static(path.join(__dirname, '../img')));
+// app.use('/img', express.static(path.join(__dirname, '../img')));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -385,10 +385,10 @@ app.get('/save-uid', (req, res) => {
     if (credit) req.session.selectedCredit = credit;
 
     // ✅ 실제 크레딧샵 페이지로 리다이렉트
-    res.redirect('/credit-shop');
+    res.redirect('/');
 });
 
-app.get('/credit-shop', async (req, res) => {
+app.get('/', async (req, res) => {
     const uid = req.cookies.uid;
     if (!uid) return res.status(401).send('로그인 정보 없음');
 
@@ -404,7 +404,7 @@ app.get('/credit-shop', async (req, res) => {
         const filePath = path.join(__dirname, '../public/credit-shop.html');
         // 한번 쓴 세션은 지우기
         delete req.session.selectedCredit;
-        
+
         fs.readFile(filePath, 'utf8', (err, data) => {
             if (err) {
                 console.error('credit-shop.html 파일 오류:', err);
@@ -438,12 +438,13 @@ app.get('/user-info', async (req, res) => {
     }
 });
 
-app.get('/', async (req, res) => {
-    const filePath = path.join(__dirname, '../public/login.html');
+// 안쓰이긴할텐데 혹여나 넣음
+app.get('/credit-shop', async (req, res) => {
+    const filePath = path.join(__dirname, '../public/credit-shop.html');
     res.sendFile(filePath, (err) => {
         if (err) {
-            console.error('login.html 파일 오류:', err);
-            res.status(500).send('로그인 페이지를 찾을 수 없습니다.');
+            console.error('크레딧샵 파일 오류:', err);
+            res.status(500).send('크레딧샵을 찾을 수 없습니다.');
         }
     });
 });
