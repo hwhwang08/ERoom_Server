@@ -774,6 +774,9 @@
             amount: amount,
             buyer_email: currentUserEmail,
             buyer_name: currentUserName,
+            custom_data: {
+                uid: currentUserEmail
+            }
         }, function (rsp) {
             console.log('=== 아임포트 응답 전체 ===');
             console.log('포트사 거래번호:', rsp.imp_uid);

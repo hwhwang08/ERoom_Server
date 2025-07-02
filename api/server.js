@@ -272,7 +272,7 @@ app.get('/save-uid', (req, res) => {
 
 app.get('/', async (req, res) => {
     const uid = req.cookies.uid;
-    if (!uid) return res.status(401).send('로그인 정보 없음');
+    if (!uid) return res.redirect('/login');
 
     try {
         const userRecord = await admin.auth().getUser(uid);
@@ -350,6 +350,7 @@ app.post('/iamport-webhook', async (req, res) => {
 
     console.log('아임포트 웹훅 호출됨!', body);
 
+    // 결제 취소(cancelled)일때 실행됨.
     if (body.status === 'cancelled') {
         const {
             imp_uid,
@@ -368,14 +369,16 @@ app.post('/iamport-webhook', async (req, res) => {
             refundedAt: new Date(cancelled_at * 1000).toISOString()
         };
 
-        try {
-            await admin.database().ref(`user_Payment/${uid}/${merchant_uid}`).update(refundData);
-            console.log(`✅ 환불 데이터 업데이트 완료: ${uid} / ${merchant_uid}`);
-        } catch (err) {
-            console.error('❌ Firebase 업데이트 실패:', err.message);
-        }
+        // ✅ custom_data에 uid가 담겨있다고 가정하고 사용
+        const parsedCustomData = typeof custom_data === 'string' ? JSON.parse(custom_data) : custom_data;
+        const uid = parsedCustomData?.uid;
+
+        if (!uid) return console.error('❌ uid 없음! custom_data에 포함시켜야 함');
+
+        admin.database().ref(`user_Payment/${uid}/${merchant_uid}`).update(refundData)
+            .then(() => console.log(`✅ 환불 데이터 업데이트 완료: ${uid} / ${merchant_uid}`))
+            .catch((err) => console.error('❌ Firebase 업데이트 실패:', err.message));
     }
-    res.send('웹훅 OK');
 });
 
 // 에러 처리
