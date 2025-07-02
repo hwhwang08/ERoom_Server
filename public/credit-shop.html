@@ -759,40 +759,6 @@
         window.location.href = '/success';
     }
 
-    // JavaScript에서 환불 요청
-    async function requestRefund(imp_uid, merchant_uid, uid, reason) {
-        try {
-            const response = await fetch('/refund', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    imp_uid: imp_uid,
-                    merchant_uid: merchant_uid,
-                    uid: uid,
-                    reason: reason || '사용자 요청'
-                })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                console.log('✅ 환불 완료:', result.data);
-                alert('환불이 완료되었습니다.');
-            } else {
-                console.error('❌ 환불 실패:', result.message);
-                alert('환불 처리 중 오류가 발생했습니다.');
-            }
-        } catch (error) {
-            console.error('환불 요청 오류:', error);
-            alert('환불 요청 중 오류가 발생했습니다.');
-        }
-    }
-
-    // 사용 예시
-    // requestRefund('imp_123456789', 'merchant_123456', 'user_uid_123', '단순 변심');
-
     // 구매하기 버튼 누르면 실행됨
     function requestpay() {
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;

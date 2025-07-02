@@ -9,6 +9,7 @@ const fs = require('fs');
 const session = require('express-session');
 // env파일불러오는 코드.
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const db = admin.firestore();
 
 // 미들웨어 설정
 app.use(cors({
@@ -395,98 +396,53 @@ app.post('/success', (req, res) => {
     res.redirect(`/success?${querystring.stringify(req.body)}`);
 });
 
-app.post('/iamport-webhook', async (req, res) => {
+app.post('/webhook', async (req, res) => {
     const body = req.body;
+    console.log('✅ 웹훅 요청 수신:', body);
 
-    console.log('아임포트 웹훅 호출됨!', body);
-    console.log('🔔 아임포트 웹훅 수신:', JSON.stringify(body, null, 2));
+    // 아임포트에서 주는 기본 데이터
+    const {
+        imp_uid,
+        merchant_uid,
+        status, // paid / cancelled 등
+        amount,
+        pay_method,
+        custom_data // 여기에 uid가 들어있다고 가정
+    } = body;
 
     try {
-        // 웹훅 응답 우선 처리 (타임아웃 방지)
-        res.status(200).send('OK');
-
-        const { imp_uid, merchant_uid, status, custom_data } = body;
-
-        // 결제 완료 시 처리
+        // 결제 성공은 paid
         if (status === 'paid') {
-            console.log('💳 결제 완료 웹훅');
+            const now = new Date();
+            const formattedTimestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '.' + now.getMilliseconds();
 
-            // Firebase에 결제 정보 저장
-            const paymentData = {
-                imp_uid,
-                merchant_uid,
-                status: 'completed',
+            // 파베에 저장할 값들
+            const paymentDoc = {
+                userUid: custom_data?.uid || '오류',
+                orderId: merchant_uid,
+                amount: parseInt(amount),
+                orderName: '크레딧 충전',
+                paymentMethod: pay_method,
+                paymentKey: imp_uid,
+                creditAmount: parseInt(body.creditAmount || 0),
                 paymentStatus: 'completed',
-                paidAt: new Date().toISOString(),
-                amount: body.amount,
-                custom_data: JSON.stringify({ uid: currentUserUid })
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                timestamp: now.toISOString()
             };
 
-            // custom_data에서 uid 추출
-            let uid = null;
-            if (custom_data) {
-                const parsedCustomData = typeof custom_data === 'string' ?
-                    JSON.parse(custom_data) : custom_data;
-                uid = parsedCustomData?.uid;
-            }
+            console.log('💾 Firestore에 저장할 웹훅 결제 정보:', paymentDoc);
 
-            if (uid) {
-                await admin.database()
-                    .ref(`user_Payment/${uid}/${merchant_uid}`)
-                    .set(paymentData);
-                console.log(`✅ 결제 데이터 저장 완료: ${uid}/${merchant_uid}`);
-            }
+            // Firestore에 저장
+            await db.collection('Payment').doc(formattedTimestamp).set(paymentDoc);
+
+            return res.status(200).send({ success: true });
+        } else {
+            console.warn('⚠️ 웹훅에서 결제 상태가 paid가 아님:', status);
+            return res.status(200).send({ success: false, message: '결제 상태가 paid가 아님' });
         }
-
-        // 결제 취소/환불 시 처리
-        else if (status === 'cancelled') {
-            console.log('🔄 환불 처리 웹훅');
-
-            const {
-                cancel_amount,
-                cancelled_at,
-                reason,
-                buyer_name
-            } = body;
-
-            const refundData = {
-                paymentStatus: 'refunded',
-                refundAmount: cancel_amount,
-                refundReason: reason || '사용자 요청',
-                refundedAt: new Date(cancelled_at * 1000).toISOString(),
-                status: 'refunded'
-            };
-
-            // custom_data에서 uid 추출
-            let uid = null;
-            if (custom_data) {
-                const parsedCustomData = typeof custom_data === 'string' ?
-                    JSON.parse(custom_data) : custom_data;
-                uid = parsedCustomData?.uid;
-            }
-
-            if (!uid) {
-                console.error('❌ uid가 없어서 환불 처리 불가');
-                return;
-            }
-
-            // Firebase 업데이트
-            await admin.database()
-                .ref(`user_Payment/${uid}/${merchant_uid}`)
-                .update(refundData);
-
-            console.log(`✅ 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
-
-            // 필요하다면 사용자 크레딧도 차감
-            // await deductUserCredit(uid, creditAmount);
-        }
-
-        else {
-            console.log(`ℹ️ 기타 상태 웹훅: ${status}`);
-        }
-
     } catch (error) {
-        console.error('❌ 웹훅 처리 중 오류:', error);
+        console.error('❌ Firestore 저장 실패:', error);
+        return res.status(500).send({ success: false, message: '서버 오류' });
     }
 });
 
