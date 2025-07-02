@@ -72,14 +72,6 @@ try {
     console.log('💡 Firebase 기능은 비활성화됩니다.');
 }
 
-// 임시 데이터 저장소 (메모리) - 맨 위로 이동
-const tempDataStore = new Map();
-
-// 임시 토큰 생성 함수
-function generateTempToken() {
-    return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
-
 // 아임포트 관련 함수들
 async function verifyPayment(imp_uid) {
     try {
@@ -100,100 +92,6 @@ async function verifyPayment(imp_uid) {
         return false;
     }
 }
-
-// ✅ 중요! 토큰 관련 라우트들을 맨 위로 이동
-app.post('/store-payment-data', (req, res) => {
-    try {
-        console.log('💾 결제 데이터 저장 요청:', req.body);
-
-        const { paymentData, userId } = req.body;
-
-        if (!paymentData || !userId) {
-            return res.status(400).json({
-                success: false,
-                message: '필수 데이터가 누락되었습니다.'
-            });
-        }
-
-        // 임시 토큰 생성
-        const tempToken = generateTempToken();
-
-        // 데이터를 임시 저장 (5분 후 자동 삭제)
-        tempDataStore.set(tempToken, {
-            paymentData,
-            userId,
-            timestamp: Date.now()
-        });
-
-        // 5분 후 데이터 삭제
-        setTimeout(() => {
-            tempDataStore.delete(tempToken);
-            console.log('🗑️ 토큰 만료로 삭제:', tempToken);
-        }, 5 * 60 * 1000); // 5분
-
-        console.log('✅ 결제 데이터 임시 저장 완료:', tempToken);
-
-        res.json({
-            success: true,
-            tempToken: tempToken,
-            redirectUrl: `/success?token=${tempToken}`
-        });
-
-    } catch (error) {
-        console.error('❌ 데이터 저장 실패:', error);
-        res.status(500).json({
-            success: false,
-            message: '데이터 저장 실패',
-            error: error.message
-        });
-    }
-});
-
-app.get('/get-payment-data/:token', (req, res) => {
-    try {
-        const { token } = req.params;
-        console.log('🔍 토큰으로 데이터 조회:', token);
-
-        const data = tempDataStore.get(token);
-
-        if (!data) {
-            console.log('❌ 토큰에 해당하는 데이터 없음:', token);
-            return res.status(404).json({
-                success: false,
-                message: '데이터를 찾을 수 없거나 만료되었습니다.'
-            });
-        }
-
-        // 5분 경과 확인
-        if (Date.now() - data.timestamp > 5 * 60 * 1000) {
-            tempDataStore.delete(token);
-            console.log('⏰ 토큰 만료:', token);
-            return res.status(404).json({
-                success: false,
-                message: '데이터가 만료되었습니다.'
-            });
-        }
-
-        // 한 번 조회 후 삭제 (보안)
-        tempDataStore.delete(token);
-        console.log('✅ 데이터 조회 성공, 토큰 삭제:', token);
-
-        res.json({
-            success: true,
-            paymentData: data.paymentData,
-            userId: data.userId
-        });
-
-    } catch (error) {
-        console.error('❌ 데이터 조회 실패:', error);
-        res.status(500).json({
-            success: false,
-            message: '데이터 조회 실패',
-            error: error.message
-        });
-    }
-});
-
 // Firebase 설정 라우트
 app.get('/firebase-config', (req, res) => {
     try {
@@ -224,22 +122,6 @@ app.get('/firebase-config', (req, res) => {
             message: error.message
         });
     }
-});
-
-// 헬스체크 라우트. 디버깅용이니 지워도 무관
-app.get('/health', (req, res) => {
-    console.log('🔍 Firebase 초기화 상태:', firebaseInitialized);
-    // console.log('🔍 환경변수 존재 여부:', !!process.env.FIREBASE_SERVICE_ACCOUNT);
-
-    res.json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        firebase: firebaseInitialized ? 'initialized' : 'disabled',
-        // firebaseEnvExists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
-        iamport: !!IMP_API_KEY,
-        version: '2.1.0-debug',
-        tempDataCount: tempDataStore.size
-    });
 });
 
 const tempTokens = new Map(); // 임시로 uid 저장
@@ -463,8 +345,36 @@ app.post('/success', (req, res) => {
     res.redirect(`/success?${querystring.stringify(req.body)}`);
 });
 
-app.post('/iamport-webhook', (req, res) => {
-    console.log('아임포트 웹훅 호출됨!', req.body);
+app.post('/iamport-webhook', async (req, res) => {
+    const body = req.body;
+
+    console.log('아임포트 웹훅 호출됨!', body);
+
+    if (body.status === 'cancelled') {
+        const {
+            imp_uid,
+            merchant_uid, // 콜렉션으로 따지면 orderId
+            cancel_amount,
+            cancelled_at,
+            reason,
+            buyer_name,
+            custom_data
+        } = body;
+
+        const refundData = {
+            paymentStatus: 'refunded', // 🔁 상태 업데이트
+            refundAmount: cancel_amount,
+            refundReason: reason || '사용자 요청',
+            refundedAt: new Date(cancelled_at * 1000).toISOString()
+        };
+
+        try {
+            await admin.database().ref(`user_Payment/${uid}/${merchant_uid}`).update(refundData);
+            console.log(`✅ 환불 데이터 업데이트 완료: ${uid} / ${merchant_uid}`);
+        } catch (err) {
+            console.error('❌ Firebase 업데이트 실패:', err.message);
+        }
+    }
     res.send('웹훅 OK');
 });
 
