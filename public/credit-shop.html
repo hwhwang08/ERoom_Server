@@ -521,6 +521,7 @@
              data-aos-anchor-placement="top"></div>
     </div>
 </div>
+</body>
 <script>
     // Firebase 초기화
     let db = null;
@@ -775,7 +776,7 @@
             buyer_email: currentUserEmail,
             buyer_name: currentUserName,
             custom_data: {
-                uid: data.uid;
+                uid: data.uid
             }
         }, function (rsp) {
             console.log('=== 아임포트 응답 전체 ===');
@@ -870,5 +871,4 @@
         });
     });
 </script>
-</body>
 </html>
