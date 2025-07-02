@@ -9,7 +9,6 @@ const fs = require('fs');
 const session = require('express-session');
 // env파일불러오는 코드.
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const db = admin.firestore();
 
 // 미들웨어 설정
 app.use(cors({
@@ -46,6 +45,7 @@ console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 
 // Firebase 초기화 부분 수정
 let admin = require('firebase-admin');
+const db = admin.firestore();
 let firebaseInitialized = false;
 
 try {
