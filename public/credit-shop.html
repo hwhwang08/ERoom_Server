@@ -565,11 +565,11 @@
 
     let currentUserEmail = '';
     let currentUserName = '';
+    let uid ='';
 
     window.addEventListener('DOMContentLoaded', async () => {
         // Firebase 초기화
         await initializeFirebase();
-        let uid ='';
 
         // 파베 초기화 된 경우에만 사용자 정보 조회 가능케
         if (firebaseInitialized && db) {
@@ -763,6 +763,8 @@
     function requestpay() {
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
         const amount = parseInt(selectedOption.getAttribute('data-price'));
+        console.log('uid값 확인', uid);
+
 
         IMP.request_pay({
             pg: selectedPG,
@@ -776,7 +778,7 @@
             buyer_email: currentUserEmail,
             buyer_name: currentUserName,
             custom_data: {
-                uid: data.uid
+                uid: uid
             }
         }, function (rsp) {
             console.log('=== 아임포트 응답 전체 ===');
