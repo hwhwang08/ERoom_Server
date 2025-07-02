@@ -399,7 +399,7 @@ app.post('/success', (req, res) => {
 
 app.post('/webhook', async (req, res) => {
     const body = req.body;
-    console.log('✅ 웹훅 요청 수신:', body);
+    console.log('✅ 웹훅 요청 수신:', req.body);
 
     // 아임포트에서 주는 기본 데이터
     const {
@@ -412,19 +412,19 @@ app.post('/webhook', async (req, res) => {
     } = body;
 
     try {
-        // 결제 성공은 paid
-        if (status === 'paid') {
+        // 결제 성공은 Paid. .toLowerCase()는 대소문자 비교. paid로 올경우 대비
+        if (status.toLowerCase() === 'paid') {
             const now = new Date();
             const formattedTimestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '') + '.' + now.getMilliseconds();
 
             // 파베에 저장할 값들
             const paymentDoc = {
                 userUid: custom_data?.uid || '오류',
-                orderId: merchant_uid,
-                amount: parseInt(amount),
+                orderId: merchant_uid || 'unknown',
+                amount: isNaN(amountNum) ? 0 : amountNum,
                 orderName: '크레딧 충전',
-                paymentMethod: pay_method,
-                paymentKey: imp_uid,
+                paymentMethod: paymentMethodVal,
+                paymentKey: imp_uid || 'unknown',
                 creditAmount: parseInt(body.creditAmount || 0),
                 paymentStatus: 'completed',
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
