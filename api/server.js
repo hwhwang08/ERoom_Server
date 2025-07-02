@@ -19,7 +19,7 @@ app.use(cors({
 }));
 
 app.use(session({
-    secret: process.env.SESSION_Key, // 원하는 시크릿 키 문자열 추후 수정할것.
+    secret: 'your-secret-key', // 원하는 시크릿 키 문자열 추후 수정할것.
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -45,7 +45,6 @@ console.log('🔑 아임포트 키 확인:', IMP_API_KEY ? '✅' : '❌');
 
 // Firebase 초기화 부분 수정
 let admin = require('firebase-admin');
-const db = admin.firestore();
 let firebaseInitialized = false;
 
 try {
@@ -432,18 +431,14 @@ app.post('/iamport-webhook', async (req, res) => {
             }
 
             if (uid) {
-                const docRef = db
-                    .collection('user_Payment')
-                    .doc(uid)
-                    .collection('payments')  // ← 만약 하위 컬렉션을 쓴다면, 구조에 맞게 수정 필요
-                    .doc(merchant_uid);
-
-                await docRef.set(refundData, { merge: true });
-                console.log(`✅ Firestore 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
+                await admin.database()
+                    .ref(`user_Payment/${uid}/${merchant_uid}`)
+                    .set(paymentData);
+                console.log(`✅ 결제 데이터 저장 완료: ${uid}/${merchant_uid}`);
             }
         }
 
-        // 결제 취소(cancelled)/ 환불일때
+        // 결제 취소/환불 시 처리
         else if (status === 'cancelled') {
             console.log('🔄 환불 처리 웹훅');
 
@@ -476,14 +471,9 @@ app.post('/iamport-webhook', async (req, res) => {
             }
 
             // Firebase 업데이트
-            const docRef = db
-                .collection('user_Payment')
-                .doc(uid)
-                .collection('payments')  // ← 만약 하위 컬렉션을 쓴다면, 구조에 맞게 수정 필요
-                .doc(merchant_uid);
-
-            await docRef.set(refundData, { merge: true });
-            console.log(`✅ Firestore 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
+            await admin.database()
+                .ref(`user_Payment/${uid}/${merchant_uid}`)
+                .update(refundData);
 
             console.log(`✅ 환불 데이터 업데이트 완료: ${uid}/${merchant_uid}`);
 
@@ -500,34 +490,107 @@ app.post('/iamport-webhook', async (req, res) => {
     }
 });
 
-// 수동 환불 처리 API 추가
-app.post('/admin/refund', async (req, res) => {
-    const { imp_uid, reason } = req.body;
 
-    if (!imp_uid) {
+// 환불 처리 API 엔드포인트 추가
+app.post('/refund', async (req, res) => {
+    const { imp_uid, merchant_uid, uid, reason } = req.body;
+
+    console.log('환불 요청 받음:', { imp_uid, merchant_uid, uid, reason });
+
+    if (!imp_uid || !merchant_uid || !uid) {
         return res.status(400).json({
             success: false,
-            message: 'imp_uid가 필요합니다'
+            message: '필수 파라미터가 누락되었습니다 (imp_uid, merchant_uid, uid 필요)'
         });
     }
 
     try {
-        const refundResult = await processRefund(imp_uid, reason);
+        // 1. 아임포트 환불 처리
+        const refundResult = await processRefund(imp_uid, reason || '사용자 요청');
+        console.log('✅ 아임포트 환불 완료:', refundResult);
+
+        // 2. Firestore에서 paymentStatus 업데이트
+        if (firebaseInitialized && admin.firestore) {
+            const db = admin.firestore();
+            const paymentRef = db.collection('user_Payment').doc(uid).collection('payments').doc(merchant_uid);
+
+            await paymentRef.update({
+                paymentStatus: 'refund',
+                refundDate: admin.firestore.FieldValue.serverTimestamp(),
+                refundReason: reason || '사용자 요청',
+                refundAmount: refundResult.amount,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log('✅ Firestore paymentStatus 업데이트 완료: refund');
+        }
 
         res.json({
             success: true,
-            message: '환불 처리 완료',
-            data: refundResult
+            message: '환불이 성공적으로 처리되었습니다',
+            data: {
+                imp_uid,
+                merchant_uid,
+                refundAmount: refundResult.amount,
+                refundDate: refundResult.cancelled_at,
+                paymentStatus: 'refund'
+            }
         });
+
     } catch (error) {
+        console.error('❌ 환불 처리 중 오류:', error);
         res.status(500).json({
             success: false,
-            message: '환불 처리 실패',
+            message: '환불 처리 중 오류가 발생했습니다',
             error: error.message
         });
     }
 });
 
+// 특정 사용자의 결제 내역 조회 API (환불 상태 확인용)
+app.get('/payment-history/:uid', async (req, res) => {
+    const { uid } = req.params;
+
+    if (!uid) {
+        return res.status(400).json({
+            success: false,
+            message: 'UID가 필요합니다'
+        });
+    }
+
+    try {
+        if (firebaseInitialized && admin.firestore) {
+            const db = admin.firestore();
+            const paymentsRef = db.collection('user_Payment').doc(uid).collection('payments');
+            const snapshot = await paymentsRef.orderBy('createdAt', 'desc').get();
+
+            const payments = [];
+            snapshot.forEach(doc => {
+                payments.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            res.json({
+                success: true,
+                data: payments
+            });
+        } else {
+            res.status(503).json({
+                success: false,
+                message: 'Firebase가 초기화되지 않았습니다'
+            });
+        }
+    } catch (error) {
+        console.error('❌ 결제 내역 조회 오류:', error);
+        res.status(500).json({
+            success: false,
+            message: '결제 내역 조회 중 오류가 발생했습니다',
+            error: error.message
+        });
+    }
+});
 
 // 에러 처리
 app.use((err, req, res, next) => {
