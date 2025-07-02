@@ -579,12 +579,27 @@
 
                 const email = data.email || '';
                 const userId = email.split('@')[0];  // @ 앞부분
+                currentUserEmail = email;
+                currentUserName = userId;
 
                 const userIdSpan = document.getElementById('user-id');
-                if (userIdSpan) userIdSpan.textContent = userId;
+                userIdSpan.textContent = userId;
 
                 console.log('✅ 크샵 uid 값:', data.uid);
                 uid = data.uid;
+
+                try {
+                    // 사용자 닉넴 가져오는 필드
+                    const userDoc = await db.collection('User').doc(uid).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        console.log('🎉 Firestore에서 가져온 displayName:', userData.displayName);
+                        userIdSpan.textContent = userData.displayName;
+                    } else console.log('⚠️ 웹사이트에 가입되지 않은 사용자:', uid);
+                } catch (error) {
+                    console.error('❌ Firestore에서 displayName을 불러오는 중 오류:', error);
+                }
+
             } catch (err) {
                 console.error('UID를 불러오는 중 오류:', err);
                 console.error('에러코드', err.code);
@@ -595,8 +610,9 @@
 
         // 만약 크레딧이 선택됐을 경우 자동 선택
         const selectedCredit = window.selectedCredit
-        console.log("크레딧샵에서 세션값 확인용", selectedCredit);
+        console.log("크레딧샵에서 크레딧 세션값 확인용", selectedCredit);
 
+        // (selectedCredit !== 'null')이랑 같지 않다. selectedCredit값이 있는지랑 널이 아닌지 확인하는것
         if (selectedCredit && selectedCredit !== 'null') {
             const targetOption = document.querySelector(`[data-credit="${selectedCredit}"]`);
             if (targetOption) {
@@ -624,7 +640,7 @@
     });
 
     // sendToServer 함수를 전역으로 먼저 정의
-    function sendToServer(rsp) {
+    async function sendToServer(rsp) {
         console.log('서버로 전송할 결제 정보:', rsp);
 
         // 결제 데이터 준비
@@ -639,40 +655,40 @@
 
         // 사용자 닉네임 가져오기
         const nickname = encodeURIComponent(document.getElementById('user-id').textContent);
-        console.log("이기 뭔데 ", nickname);
+        console.log("닉넴 확인 ", nickname);
 
-        // 🔥 파이어베이스에 결제 정보 저장
-        savePaymentToFirebase(paymentData, nickname);
+        const queryParams = new URLSearchParams(paymentData).toString();
 
-        // GET 방식으로 Query Parameter 생성
-        const queryParams = new URLSearchParams(paymentData);
-        const url = `/verify-user-and-payment?${queryParams.toString()}`;
+        try {
+            const res = await fetch(`/verify-user-and-payment?${queryParams}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${nickname}`
+                },
+            });
 
-        $.ajax({
-            url: url,
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${nickname}`
-            },
-            success: function(response) {
-                console.log('서버 응답:', response);
-                // 유저 존재 확인 완료 - success 페이지로 이동
-                if (response.success && response.userExists) redirectSuccess(response.paymentData, nickname);
-                else alert('사용자 검증 실패: ' + response.message);
-            },
-            error: function(xhr, status, error) {
-                console.error('서버 통신 실패:', xhr.responseText);
+            if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+            const response = await res.json();
 
-                // 401 Unauthorized 처리
-                if (xhr.status === 401) alert('인증 실패: Authorization 헤더가 유효하지 않습니다.');
-                else alert('서버 통신 실패: ' + error);
+            console.log('서버 응답:', response);
+
+            if (response.success && response.userExists) {
+                // 🔥 파이어베이스에 결제 정보 저장
+                await savePaymentToFirebase(response.paymentData, response.nickname);
+                redirectSuccess(response.paymentData, response.nickname);
+            } else {
+                alert('❌ 사용자 검증 실패: ' + response.message);
             }
-        });
+        } catch (error) {
+            console.error("❌ 서버 통신 실패:", error);
+            alert('서버 오류가 발생했습니다.');
+        }
     }
 
     // 파베에 결제 정보 저장하는 함수
     async function savePaymentToFirebase(paymentData, nickname) {
         if (!firebaseInitialized || !db) return console.warn('⚠️ Firebase가 초기화되지 않았습니다.');
+        console.log("저장시작")
 
         try {
             const res = await fetch('/user-info');
@@ -685,7 +701,7 @@
 
             // user_Payment 컬렉션에 저장할 데이터
             const paymentDocument = {
-                userId: userId,
+                userUid: userId,
                 userName: userName,
                 orderId: paymentData.orderId,
                 amount: parseInt(paymentData.amount),
