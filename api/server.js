@@ -446,26 +446,24 @@ app.post('/webhook', async (req, res) => {
     // paymentStatus "completed"
 
     try {
-        // 1. Log 컬렉션에서 paymentKey가 imp_uid와 일치하는 문서 찾기
+        // Log 컬렉션에서 paymentKey가 imp_uid와 일치하는 문서 찾기
         const querySnapshot = await db.collection('Log').where('paymentKey', '==', imp_uid).get();
 
         if (querySnapshot.empty) {
             console.log('해당 imp_uid에 해당하는 결제 기록이 없습니다.');
             return res.status(404).send({ success: false, message: '결제 기록 없음' });
         }
+        if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+            // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
+            const docs = querySnapshot.docs;
+            for (const doc of docs) {
+                const paymentData = doc.data();
+                console.log("유저 데이터.", doc.data())
+                const userUid = paymentData.userUid;  // 유저 식별자
+                console.log("유저 userUid.", userUid)
+                console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
 
-        // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
-        const docs = querySnapshot.docs;
-        for (const doc of docs) {
-            const paymentData = doc.data();
-            console.log("유저 데이터.", doc.data())
-            const userUid = paymentData.userUid;  // 유저 식별자
-            console.log("유저 userUid.", userUid)
-            console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
-
-
-            if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
-                // 환불 처리 로직 (예: 상태 업데이트)
+                // 파베 로그 환불 처리
                 const paymentRef = db.collection('Log').doc(doc.id);
                 console.log("혹시 모를ㄹ 출력", paymentRef)
                 await paymentRef.update({
@@ -473,6 +471,24 @@ app.post('/webhook', async (req, res) => {
                     refundAmount: parseInt(amount) || 0,
                     refundedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
+
+                const userRef = db.collection('User').doc(userUid);
+                const userSnap = await userRef.get();
+
+                if (userSnap.exists) {
+                    const userData = userSnap.data();
+                    console.log('✅ 환불 대상 유저 정보:', userData);
+
+                    // 예: 크레딧 차감 처리 (선택 사항)
+                    const oldCredits = userData.credits || 0;
+                    const refundAmount = parseInt(amount) || 0;
+                    const newCredits = Math.max(0, oldCredits - refundAmount);
+
+                    await userRef.update({ credits: newCredits });
+                    console.log(`💳 유저 크레딧 업데이트 완료: ${oldCredits} → ${newCredits}`);
+                } else {
+                    console.warn('❗환불 대상 유저 정보를 찾을 수 없습니다:', userUid);
+                }
 
                 console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
             }
