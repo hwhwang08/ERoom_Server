@@ -181,6 +181,7 @@
             <span id="button-text">로그인</span>
             <div class="loader" id="loader"></div>
         </button>
+        <button id="google-login-btn">Google 계정으로 로그인</button>
     </form>
 </div>
 
@@ -303,6 +304,41 @@
 
         function hideError() {
             errorAlert.style.display = 'none';
+        }
+    });
+
+    // Google 로그인 버튼 클릭 시
+    document.getElementById('google-login-btn').addEventListener('click', async () => {
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await auth.signInWithPopup(provider);
+
+            const user = result.user;
+            console.log('✅ Google 로그인 성공:', user.email, user.uid);
+
+            const idToken = await user.getIdToken();
+
+            // 기존과 동일하게 서버에 ID 토큰 전달
+            const response = await fetch('/verify-token', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + idToken
+                },
+                credentials: 'include'
+            });
+
+            const resultData = await response.json();
+            console.log('서버 응답:', resultData);
+
+            if (resultData.success && resultData.redirectUrl) {
+                window.location.href = resultData.redirectUrl;
+            } else {
+                alert('토큰 검증 실패: ' + (resultData.message || '알 수 없는 오류'));
+            }
+
+        } catch (err) {
+            console.error('❌ Google 로그인 실패:', err);
+            alert('Google 로그인 실패: ' + err.message);
         }
     });
 </script>
