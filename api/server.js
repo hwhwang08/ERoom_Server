@@ -430,8 +430,6 @@ app.post('/webhook', async (req, res) => {
     if (!imp_uid) return res.status(400).send({ success: false, message: 'imp_uid 누락' });
     console.log('✅ 웹훅 요청 수신:', req.body);
 
-    // const body = req.body;
-
     // 웹훅으로 들어오는것
     // imp_uid: 'imp_025557212534', <<<<<<<<< 이걸로 해야할거같은데
     //   merchant_uid: 'payment-1751461555928',
@@ -453,56 +451,60 @@ app.post('/webhook', async (req, res) => {
             console.log('해당 imp_uid에 해당하는 결제 기록이 없습니다.');
             return res.status(404).send({ success: false, message: '결제 기록 없음' });
         }
-        if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
-            // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
-            const docs = querySnapshot.docs;
-            for (const doc of docs) {
-                const paymentData = doc.data();
-                console.log("유저 데이터.", doc.data())
-                const userUid = paymentData.userUid;  // 유저 식별자
-                console.log("유저 userUid.", userUid)
-                console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
-                const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
-                console.log("크레딧개수",credits);
 
-                // 파베 로그 환불 처리
-                const paymentRef = db.collection('Log').doc(doc.id);
-                console.log("혹시 모를ㄹ 출력", paymentRef)
-                await paymentRef.update({
-                    paymentStatus: 'refunded',
-                    refundAmount: paymentData.amount || 0,
-                    refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-                });
+        const docs = querySnapshot.docs;
 
-                const userRef = db.collection('User').doc(userUid);
-                const userSnap = await userRef.get();
+        // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
+        for (const doc of docs) {
+            const paymentData = doc.data();
+            console.log("유저 데이터.", doc.data())
+            const userUid = paymentData.userUid;  // 유저 식별자
+            console.log("유저 userUid.", userUid)
+            console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
+            const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
+            console.log("크레딧개수",credits);
+            const paymentRef = db.collection('Log').doc(doc.id);
+            console.log("혹시 모를ㄹ 출력", paymentRef)
 
-                if (userSnap.exists) {
-                    const userData = userSnap.data();
-                    console.log('✅ 환불 대상 유저 정보:', userData);
+                if (status === 'paid') {
+                    await paymentRef.update({
+                        paymentStatus: 'paid',
+                        paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
+                    console.log(`💳 결제 성공 처리 완료: ${imp_uid}`);
+                } else if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+                    // 파베 로그 환불 처리
+                    await paymentRef.update({
+                        paymentStatus: 'refunded',
+                        refundAmount: paymentData.price || 0, // 환불된 금액
+                        refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
 
-                    // 예: 크레딧 차감 처리 (선택 사항)
-                    const hadCredits = userData.credits || 0;
-                    console.log('현재 갖고 있는 크레딧: ', hadCredits);
-                    const refundAmount = credits || 0;
-                    console.log('빠질 크레딧', refundAmount);
-                    const newCredits = Math.max(0, hadCredits - refundAmount);
-                    console.log(newCredits);
+                    const userRef = db.collection('User').doc(userUid);
+                    const userSnap = await userRef.get();
 
-                    await userRef.update({ credits: newCredits });
-                    console.log(`💳 유저 크레딧 업데이트 완료: ${hadCredits} → ${newCredits}`);
-                } else {
-                    console.warn('❗환불 대상 유저 정보를 찾을 수 없습니다:', userUid);
+                    if (userSnap.exists) {
+                        const userData = userSnap.data();
+                        console.log('✅ 환불 대상 유저 정보:', userData);
+
+                        // 예: 크레딧 차감 처리 (선택 사항)
+                        const hadCredits = userData.credits || 0;
+                        console.log('현재 갖고 있는 크레딧: ', hadCredits);
+                        const refundAmount = credits || 0;
+                        console.log('빠질 크레딧', refundAmount);
+                        const newCredits = Math.max(0, hadCredits - refundAmount);
+                        console.log(newCredits);
+                        await userRef.update({ credits: newCredits });
+                    } else console.warn('❗환불 대상 유저 정보를 찾을 수 없습니다:', userUid);
+                    console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
                 }
-                console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
-            }
         }
-
         return res.status(200).send({ success: true, message: '환불 처리 완료' });
     } catch (error) {
         console.error('❌ 환불 처리 중 오류:', error);
         return res.status(500).send({ success: false, message: '서버 오류' });
     }
+
 });
 
 // 에러 처리
