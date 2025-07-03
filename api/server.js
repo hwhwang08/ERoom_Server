@@ -210,14 +210,14 @@ app.get('/verify-user-and-payment', async (req, res) => {
         });
     }
 
-    const { orderId, price, orderName, method, paymentKey, creditAmount } = req.query;
+    const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.query;
 
     res.json({
         success: true,
         userExists: true,
         nickname: decodeURIComponent(nickname),
         message: '사용자 검증 및 결제 데이터 처리 완료',
-        paymentData: { orderId, price, orderName, method, paymentKey, creditAmount }
+        paymentData: { orderId, amount, orderName, method, paymentKey, creditAmount }
     });
 });
 
@@ -335,7 +335,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
         if (!uid) return res.status(401).json({ success: false, message: '로그인 필요' });
         console.log("파베에 저장전 유저 uid확인", uid)
 
-        const { orderId, price, orderName, method, paymentKey, creditAmount } = req.body;
+        const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.body;
 
         // 🔐 결제 진위 검증 로직도 추가하는 게 좋음 (ex. 아임포트 REST API로 imp_uid 검증)
         const now = new Date();
@@ -345,7 +345,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
             userUid: uid,
             userName: nickname,
             orderId,
-            price: parseInt(price),
+            amount: parseInt(amount),
             orderName,
             paymentMethod: method,
             paymentKey,
@@ -383,7 +383,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
             savedData: {
                 nickname,
                 orderId,
-                price,
+                amount,
                 orderName,
                 method,
                 creditAmount,
@@ -391,7 +391,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ 서버 결제 저장 실패 혹은 User콜렉션 없음.:', error);
+        console.error('❌ 서버 결제 저장 실패:', error);
         res.status(500).json({ success: false, message: '결제 저장 중 오류' });
     }
 });
