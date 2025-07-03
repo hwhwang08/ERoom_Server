@@ -383,8 +383,8 @@ app.post('/verify-and-store-payment', async (req, res) => {
             savedData: {
                 nickname,
                 orderId,
-                price,
                 amount,
+                orderName,
                 method,
                 creditAmount,
                 newCredit
