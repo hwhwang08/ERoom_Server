@@ -391,7 +391,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ 서버 결제 저장 실패:', error);
+        console.error('❌ 서버 결제 저장 실패 혹은 User콜렉션 없음.:', error);
         res.status(500).json({ success: false, message: '결제 저장 중 오류' });
     }
 });
