@@ -358,7 +358,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
         // 💾 1. 결제 로그 저장
         await admin.firestore().collection('Log').doc('payment_' + timestamp).set(paymentDocument);
 
-        // 💰 2. Users 컬렉션에서 해당 유저의 기존 credit을 가져오기
+        // 💰 2. User 컬렉션에서 해당 유저의 기존 credit을 가져오기
         const userRef = admin.firestore().collection('User').doc(uid);
         const userSnap = await userRef.get();
 
@@ -439,16 +439,11 @@ app.post('/webhook', async (req, res) => {
     //   cancellation_id: '7NEX9CHCKPYNPXE1XY5G'
 
     // 파베에 있는것.
-    // orderId
-    // "payment-1751461555928"
+    // orderId "payment-1751461555928"
     // orderName
     // "2,000 크레딧"
-    // paymentKey
-    // "imp_025557212534"
-    // paymentStatus
-    // "completed"
-    // timestamp
-    // "payment_2025-07-02T13:06:15.371Z"
+    // paymentKey "imp_025557212534"
+    // paymentStatus "completed"
 
     try {
         // 1. Log 컬렉션에서 paymentKey가 imp_uid와 일치하는 문서 찾기
@@ -463,16 +458,19 @@ app.post('/webhook', async (req, res) => {
         const docs = querySnapshot.docs;
         for (const doc of docs) {
             const paymentData = doc.data();
+            console.log("유저 데이터.", doc.data())
             const userUid = paymentData.userUid;  // 유저 식별자
+            console.log("유저 userUid.", userUid)
+
 
             if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
                 // 환불 처리 로직 (예: 상태 업데이트)
-                // const paymentRef = db.collection('User').doc(userUid);
-                // await paymentRef.update({
-                //     paymentStatus: 'refunded',
-                //     refundAmount: parseInt(amount) || 0,
-                //     refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-                // });
+                const paymentRef = db.collection('Log').doc(userUid);
+                await paymentRef.update({
+                    paymentStatus: 'refunded',
+                    refundAmount: parseInt(amount) || 0,
+                    refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
 
                 console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
             }
