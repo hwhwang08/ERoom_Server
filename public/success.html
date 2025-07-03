@@ -180,7 +180,7 @@
             
             // 구매 정보 서버 전송
             if (paymentInfo) {
-                sendPurchaseInfo(paymentInfo.nickname, paymentInfo.creditAmount, paymentInfo.amount).then(success => {
+                sendPurchaseInfo(paymentInfo.nickname, paymentInfo.creditAmount, paymentInfo.price).then(success => {
                     if (success) console.log('✅ 크레딧 구매 정보 전송 성공');
                     else console.warn('⚠️ 크레딧 구매 정보 전송 실패');
                 });
@@ -199,15 +199,15 @@
         const userIdEl = document.getElementById('userId');
         const orderIdEl = document.getElementById('orderId');
         const orderNameEl = document.getElementById('orderName');
-        const amountEl = document.getElementById('amount');
+        const priceEl = document.getElementById('price');
         const methodEl = document.getElementById('method');
         const creditAmountEl = document.getElementById('creditAmount');
 
         userIdEl.textContent = paymentInfo.nickname || 'N/A';
         orderIdEl.textContent = paymentInfo.orderId || 'N/A';
         orderNameEl.textContent = paymentInfo.orderName || 'N/A';
-        const formattedAmount = paymentInfo.amount ? `${Number(paymentInfo.amount).toLocaleString()}원` : 'N/A';
-        amountEl.textContent = formattedAmount;
+        const formattedAmount = paymentInfo.price ? `${Number(paymentInfo.price).toLocaleString()}원` : 'N/A';
+        priceEl.textContent = formattedAmount;
         methodEl.textContent = paymentInfo.method || 'N/A';
         const formattedCredit = paymentInfo.creditAmount ? `${Number(paymentInfo.creditAmount).toLocaleString()} 크레딧` : 'N/A';
         creditAmountEl.textContent = formattedCredit;
@@ -223,7 +223,7 @@
         setTimeout(() => { window.location.href = '/'; }, 3000);
     }
 
-    async function sendPurchaseInfo(nickname, creditAmount, amount) {
+    async function sendPurchaseInfo(nickname, creditAmount, price) {
         try {
             const response = await fetch('/purchase', {
                 method: 'POST',
@@ -234,7 +234,7 @@
                     uid: nickname,
                     creditAmount: Number(creditAmount),
                     timestamp: new Date().toISOString(),
-                    price: Number(amount)
+                    price: Number(price)
                 })
             });
             if (response.ok) return console.log('✅ 서버 응답:', await response.json()), true;

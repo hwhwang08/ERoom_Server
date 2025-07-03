@@ -210,14 +210,14 @@ app.get('/verify-user-and-payment', async (req, res) => {
         });
     }
 
-    const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.query;
+    const { orderId, price, orderName, method, paymentKey, creditAmount } = req.query;
 
     res.json({
         success: true,
         userExists: true,
         nickname: decodeURIComponent(nickname),
         message: '사용자 검증 및 결제 데이터 처리 완료',
-        paymentData: { orderId, amount, orderName, method, paymentKey, creditAmount }
+        paymentData: { orderId, price, orderName, method, paymentKey, creditAmount }
     });
 });
 
