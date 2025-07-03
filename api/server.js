@@ -425,7 +425,7 @@ app.post('/success', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-    const { imp_uid, status, amount } = req.body;
+    const { imp_uid, status } = req.body;
 
     if (!imp_uid) return res.status(400).send({ success: false, message: 'imp_uid 누락' });
     console.log('✅ 웹훅 요청 수신:', req.body);
@@ -462,13 +462,15 @@ app.post('/webhook', async (req, res) => {
                 const userUid = paymentData.userUid;  // 유저 식별자
                 console.log("유저 userUid.", userUid)
                 console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
+                const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
+                console.log("크레딧개수",credits);
 
                 // 파베 로그 환불 처리
                 const paymentRef = db.collection('Log').doc(doc.id);
                 console.log("혹시 모를ㄹ 출력", paymentRef)
                 await paymentRef.update({
                     paymentStatus: 'refunded',
-                    refundAmount: parseInt(amount) || 0,
+                    refundAmount: paymentData.amount || 0,
                     refundedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
 
@@ -480,16 +482,18 @@ app.post('/webhook', async (req, res) => {
                     console.log('✅ 환불 대상 유저 정보:', userData);
 
                     // 예: 크레딧 차감 처리 (선택 사항)
-                    const oldCredits = userData.credits || 0;
-                    const refundAmount = parseInt(amount) || 0;
-                    const newCredits = Math.max(0, oldCredits - refundAmount);
+                    const hadCredits = userData.credits || 0;
+                    console.log('현재 갖고 있는 크레딧: ', hadCredits);
+                    const refundAmount = credits || 0;
+                    console.log('빠질 크레딧', refundAmount);
+                    const newCredits = Math.max(0, hadCredits - refundAmount);
+                    console.log(newCredits);
 
                     await userRef.update({ credits: newCredits });
-                    console.log(`💳 유저 크레딧 업데이트 완료: ${oldCredits} → ${newCredits}`);
+                    console.log(`💳 유저 크레딧 업데이트 완료: ${hadCredits} → ${newCredits}`);
                 } else {
                     console.warn('❗환불 대상 유저 정보를 찾을 수 없습니다:', userUid);
                 }
-
                 console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
             }
         }
