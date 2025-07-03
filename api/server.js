@@ -335,7 +335,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
         if (!uid) return res.status(401).json({ success: false, message: '로그인 필요' });
         console.log("파베에 저장전 유저 uid확인", uid)
 
-        const { orderId, amount, orderName, method, paymentKey, creditAmount } = req.body;
+        const { orderId, price, orderName, method, paymentKey, creditAmount } = req.body;
 
         // 🔐 결제 진위 검증 로직도 추가하는 게 좋음 (ex. 아임포트 REST API로 imp_uid 검증)
         const now = new Date();
@@ -345,7 +345,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
             userUid: uid,
             userName: nickname,
             orderId,
-            amount: parseInt(amount),
+            price: parseInt(price),
             orderName,
             paymentMethod: method,
             paymentKey,
@@ -383,7 +383,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
             savedData: {
                 nickname,
                 orderId,
-                amount,
+                price,
                 orderName,
                 method,
                 creditAmount,
