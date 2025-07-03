@@ -647,7 +647,7 @@
         // 결제 데이터 준비
         const paymentData = {
             orderId: rsp.merchant_uid,
-            price: selectedOption.getAttribute('data-price'),
+            amount: selectedOption.getAttribute('data-price'),
             orderName: selectedOption.querySelector('.credit-amount').textContent,
             method: rsp.pay_method || '카드',
             paymentKey: rsp.imp_uid,
@@ -728,7 +728,7 @@
         const paymentInfo = {
             nickname: decodeURIComponent(nickname),
             orderId: paymentData.orderId || 'N/A',
-            price: paymentData.price || '0',
+            amount: paymentData.amount || '0',
             orderName: paymentData.orderName || 'N/A',
             method: paymentData.method || 'N/A',
             creditAmount: paymentData.creditAmount || '0',
@@ -751,7 +751,7 @@
     // 구매하기 버튼 누르면 실행됨
     function requestpay() {
         const productName = `${selectedOption.querySelector('.credit-amount').textContent}`;
-        const price = parseInt(selectedOption.getAttribute('data-price'));
+        const amount = parseInt(selectedOption.getAttribute('data-price'));
         console.log('uid값 확인', uid);
 
 
@@ -763,7 +763,7 @@
             pay_method: 'card',
             merchant_uid: `payment-${new Date().getTime()}`,
             name: productName,
-            price: price,
+            amount: amount,
             buyer_email: currentUserEmail,
             buyer_name: currentUserName,
             custom_data: {
@@ -785,7 +785,7 @@
             } else if (rsp.success === true && rsp.imp_uid && rsp.merchant_uid) {
                 console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
                 sessionStorage.setItem('orderId', rsp.merchant_uid);
-                sessionStorage.setItem('price', price.toString());
+                sessionStorage.setItem('amount', amount.toString());
                 sessionStorage.setItem('orderName', productName);
                 sessionStorage.setItem('method', rsp.pay_method || '카드');
                 sessionStorage.setItem('paymentKey', rsp.imp_uid);
@@ -793,10 +793,10 @@
                 sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
                 sendToServer(rsp);
             } else if ((rsp.success === undefined || rsp.success === null) && rsp.imp_uid && rsp.merchant_uid) {
-            // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
+                // 현재 success도, error_code도 undefined이기에 단순하게 imp_uid와 merchant_uid 존재만으로 성공 판단
                 console.log('결제 완료 처리 (imp_uid와 merchant_uid 존재)');
                 sessionStorage.setItem('orderId', rsp.merchant_uid);
-                sessionStorage.setItem('price', price.toString());
+                sessionStorage.setItem('amount', amount.toString());
                 sessionStorage.setItem('orderName', productName);
                 sessionStorage.setItem('method', rsp.pay_method || '카드');
                 sessionStorage.setItem('paymentKey', rsp.imp_uid);
@@ -804,12 +804,12 @@
                 sessionStorage.setItem('userId', document.getElementById('user-id').textContent);
                 sendToServer(rsp);
             } else if (!rsp.success) {
-            // 카카오페이용. 나이스페이할거면 주석처리할것
-            const iframes = document.querySelectorAll("iframe");
-            iframes.forEach(iframe => iframe.remove());
-            console.log('결제 실패/취소 처리');
-            console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
-            selectedPG = null;
+                // 카카오페이용. 나이스페이할거면 주석처리할것
+                const iframes = document.querySelectorAll("iframe");
+                iframes.forEach(iframe => iframe.remove());
+                console.log('결제 실패/취소 처리');
+                console.log('실패 코드와 메시지', rsp.error_code, rsp.error_msg);
+                selectedPG = null;
             }
         });
     }
