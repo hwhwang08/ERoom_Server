@@ -345,7 +345,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
             userUid: uid,
             userName: nickname,
             orderId,
-            amount: parseInt(amount),
+            price: parseInt(amount),
             orderName,
             paymentMethod: method,
             paymentKey,
