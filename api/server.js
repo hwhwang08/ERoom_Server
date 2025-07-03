@@ -461,11 +461,13 @@ app.post('/webhook', async (req, res) => {
             console.log("유저 데이터.", doc.data())
             const userUid = paymentData.userUid;  // 유저 식별자
             console.log("유저 userUid.", userUid)
+            console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
 
 
             if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
                 // 환불 처리 로직 (예: 상태 업데이트)
-                const paymentRef = db.collection('Log').doc(userUid);
+                const paymentRef = db.collection('Log').doc(doc.id);
+                console.log("혹시 모를ㄹ 출력", paymentRef)
                 await paymentRef.update({
                     paymentStatus: 'refunded',
                     refundAmount: parseInt(amount) || 0,
@@ -477,58 +479,6 @@ app.post('/webhook', async (req, res) => {
         }
 
         return res.status(200).send({ success: true, message: '환불 처리 완료' });
-
-        // if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
-        //     // 환불 처리
-        //     // 보통 환불은 기존 결제 문서를 찾아서 상태 업데이트 또는 새로운 환불 문서 생성
-        //     // 여기서는 결제 문서 업데이트 예시 (merchant_uid 기반 문서 찾기 필요)
-        //
-        //     // console.log("uid확인 ", req.cookies.uid);
-        //
-        //     // 변경 코드 ====================
-        //     // const userUid = custom_data?.uid;
-        //     // console.log("uid확인 ", userUid);
-        //     //
-        //     // if (!userUid) {
-        //     //     // uid 없으면 에러 처리
-        //     //     console.error('❌ 사용자 UID가 없습니다.');
-        //     //     return res.status(400).send({ success: false, message: '사용자 UID 누락' });
-        //     // }
-        //
-        //     const paymentRef = db.collection('Log').doc(userUid);
-        //
-        //     // =====================
-        //
-        //     const paymentSnap = await paymentRef.get();
-        //
-        //     if (paymentSnap.exists) {
-        //         await paymentRef.update({
-        //             paymentStatus: 'refunded',
-        //             refundAmount: parseInt(amount) || 0,
-        //             refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-        //             timestamp: now.toISOString()
-        //         });
-        //         console.log('💾 Firestore 환불 상태 업데이트 완료:', merchant_uid);
-        //         return res.status(200).send({success: true, message: '환불 처리 완료'});
-        //     } else {
-        //         // 결제 기록이 없으면 새로 저장할 수도 있음
-        //         const refundDoc = {
-        //             userUid: custom_data?.uid || '오류',
-        //             orderId: merchant_uid || 'unknown',
-        //             refundAmount: parseInt(amount) || 0,
-        //             paymentStatus: 'refunded',
-        //             refundReason: '웹훅 환불 알림',
-        //             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        //             timestamp: now.toISOString()
-        //         };
-        //         await db.collection('Refunds').doc(formattedTimestamp).set(refundDoc);
-        //         console.log('💾 Firestore에 새 환불 문서 저장:', refundDoc);
-        //         return res.status(200).send({success: true, message: '새 환불 문서 저장 완료'});
-        //     }
-        // }else {
-        //     console.warn('⚠️ 웹훅에서 결제 상태가 paid가 아님:', status);
-        //     return res.status(200).send({ success: false, message: '결제 상태가 paid가 아님' });
-        // }
     } catch (error) {
         console.error('❌ 환불 처리 중 오류:', error);
         return res.status(500).send({ success: false, message: '서버 오류' });
