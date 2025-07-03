@@ -647,7 +647,7 @@
         // 결제 데이터 준비
         const paymentData = {
             orderId: rsp.merchant_uid,
-            price: selectedOption.getAttribute('data-price'),
+            amount: selectedOption.getAttribute('data-price'),
             orderName: selectedOption.querySelector('.credit-amount').textContent,
             method: rsp.pay_method || '카드',
             paymentKey: rsp.imp_uid,
