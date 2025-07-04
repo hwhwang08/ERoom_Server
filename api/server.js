@@ -28,7 +28,7 @@ app.use(session({
 }));
 
 // 로컬시 필요
-app.use('/img', express.static(path.join(__dirname, '../img')));
+// app.use('/img', express.static(path.join(__dirname, '../img')));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -376,7 +376,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
         console.log('🧮 계산된 크레딧:', currentCredit, '+', creditAmount, '=', newCredit);
 
         // 🔄 3. 여기가 credits필드 업데이트 하는부분. 파베에 크레딧 값 저장한다!!!
-        await userRef.update({ Credits: newCredit });
+        await userRef.update({ credits: newCredit });
 
         // 디버기용으로 데이터들 보냄.
         res.json({ success: true, message: '결제 정보 및 크레딧 업데이트 완료',
@@ -488,7 +488,7 @@ app.post('/webhook', async (req, res) => {
                     console.log('✅ 환불 대상 유저 정보:', userData);
 
                     // 예: 크레딧 차감 처리 (선택 사항)
-                    const hadCredits = userData.Credits || 0;
+                    const hadCredits = userData.credits || 0;
                     console.log('현재 갖고 있는 크레딧: ', hadCredits);
                     const refundAmount = credits || 0;
                     console.log('빠질 크레딧', refundAmount);
