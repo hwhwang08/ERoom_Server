@@ -28,7 +28,7 @@ app.use(session({
 }));
 
 // 로컬시 필요
-app.use('/img', express.static(path.join(__dirname, '../img')));
+// app.use('/img', express.static(path.join(__dirname, '../img')));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -50,14 +50,14 @@ let firebaseInitialized = false;
 
 try {
     // !!! 로컬로 할거면 if주석처리
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    // if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        // const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         // \\n을 \n줄바꿈으로 바꾸는코드.
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        // serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
 
         // 로컬환경
-        // const serviceAccount = require('../eroom.json');
+        const serviceAccount = require('../eroom.json');
 
         if (!admin.apps.length) {
             admin.initializeApp({
@@ -68,7 +68,7 @@ try {
             db = admin.firestore();
             console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
         }
-    }
+    // }
 } catch (error) {
     console.error('❌ Firebase 초기화 오류:', error.message);
     console.log('💡 Firebase 기능은 비활성화됩니다.');
@@ -444,67 +444,83 @@ app.post('/webhook', async (req, res) => {
     // paymentStatus "completed"
 
     try {
-        // Log 컬렉션에서 paymentKey가 imp_uid와 일치하는 문서 찾기
-        const querySnapshot = await db.collection('Log').where('paymentKey', '==', imp_uid).get();
 
-        if (querySnapshot.empty) {
-            console.log('해당 imp_uid에 해당하는 결제 기록이 없습니다.');
-            return res.status(404).send({ success: false, message: '결제 기록 없음' });
-        }
+        if (status === 'paid') {
+            // Log 컬렉션에서 paymentKey가 imp_uid와 일치하는 문서 찾기
+            const querySnapshot = await db.collection('Log').where('paymentKey', '==', imp_uid).get();
 
-        const docs = querySnapshot.docs;
+            if (querySnapshot.empty) {
+                console.log('해당 imp_uid에 해당하는 결제 기록이 없습니다.');
+                return res.status(404).send({success: false, message: '결제 기록 없음'});
+            }
 
-        // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
-        for (const doc of docs) {
-            const paymentData = doc.data();
-            console.log("유저 데이터.", doc.data())
-            const userUid = paymentData.userUid;  // 유저 식별자
-            console.log("유저 userUid.", userUid)
-            console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
-            const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
-            console.log("크레딧개수",credits);
-            const paymentRef = db.collection('Log').doc(doc.id);
-            console.log("혹시 모를ㄹ 출력", paymentRef)
+            // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
+            for (const doc of querySnapshot.docs) {
+                const paymentData = doc.data();
+                console.log("유저 데이터.", doc.data())
+                const userUid = paymentData.userUid;  // 유저 식별자
+                console.log("유저 userUid.", userUid)
+                console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
+                const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
+                console.log("크레딧개수", credits);
+                const paymentRef = db.collection('Log').doc(doc.id);
+                console.log("혹시 모를ㄹ 출력", paymentRef);
 
-                if (status === 'paid') {
-                    await paymentRef.update({
-                        paymentStatus: 'paid',
-                        paidAt: admin.firestore.FieldValue.serverTimestamp(),
-                    });
-                    console.log(`💳 결제 성공 처리 완료: ${imp_uid}`);
-                } else if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
-                    // 파베 로그 환불 처리
-                    await paymentRef.update({
-                        paymentStatus: 'refunded',
-                        refundAmount: paymentData.price || 0, // 환불된 금액
-                        refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    });
+                await paymentRef.update({
+                    paymentStatus: 'paid',
+                    paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
 
-                    const userRef = db.collection('User').doc(userUid);
-                    const userSnap = await userRef.get();
+                console.log(`💳 결제 성공 처리 완료: ${imp_uid}`);
+            }
 
-                    if (userSnap.exists) {
-                        const userData = userSnap.data();
-                        console.log('✅ 환불 대상 유저 정보:', userData);
+        } else if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+            // 다시 Log 문서 찾기
+            const querySnapshot = await db.collection('Log').where('paymentKey', '==', imp_uid).get();
 
-                        // 예: 크레딧 차감 처리 (선택 사항)
-                        const hadCredits = userData.credits || 0;
-                        console.log('현재 갖고 있는 크레딧: ', hadCredits);
-                        const refundAmount = credits || 0;
-                        console.log('빠질 크레딧', refundAmount);
-                        const newCredits = Math.max(0, hadCredits - refundAmount);
-                        console.log(newCredits);
-                        await userRef.update({ credits: newCredits });
-                    } else console.warn('❗환불 대상 유저 정보를 찾을 수 없습니다:', userUid);
-                    console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
+            if (querySnapshot.empty) {
+                console.log('환불 대상 결제 기록 없음:', imp_uid);
+                return res.status(404).send({ success: false, message: '환불 결제 기록 없음' });
+            }
+
+            for (const doc of querySnapshot.docs) {
+                const paymentData = doc.data();
+                const paymentRef = db.collection('Log').doc(doc.id);
+                const userUid = paymentData.userUid;
+                const credits = paymentData.creditAmount || 0;
+
+                // 파베 로그 환불 처리
+                await paymentRef.update({
+                    paymentStatus: 'refunded',
+                    refundAmount: paymentData.price || 0,
+                    refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+
+                const userRef = db.collection('User').doc(userUid);
+                const userSnap = await userRef.get();
+
+                if (userSnap.exists) {
+                    const userData = userSnap.data();
+                    console.log('✅ 환불 대상 유저 정보:', userData);
+                    const hadCredits = userData.credits || 0;
+                    console.log('현재 갖고 있는 크레딧: ', hadCredits);
+                    console.log('빠질 크레딧', credits);
+                    const newCredits = Math.max(0, hadCredits - credits);
+                    console.log('남을 값: ', newCredits);
+
+                    await userRef.update({ credits: newCredits });
+
+                    console.log(`✅ 환불 완료 - 유저: ${userUid}, imp_uid: ${imp_uid}`);
+                } else {
+                    console.warn('❗환불 대상 유저 정보를 찾을 수 없습니다:', userUid);
                 }
+            }
         }
         return res.status(200).send({ success: true, message: '환불 처리 완료' });
     } catch (error) {
         console.error('❌ 환불 처리 중 오류:', error);
         return res.status(500).send({ success: false, message: '서버 오류' });
     }
-
 });
 
 // 에러 처리
@@ -535,18 +551,18 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 module.exports = app;
 
 // 로컬테스트용 https
-// const https = require('https');
-//
-// const options = {
-//     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
-//     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
-// };
+const https = require('https');
+
+const options = {
+    key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
+    cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
+};
 
 // || 7999와 https는 로컬 개발용
 if (require.main === module) {
     const PORT = process.env.PORT || 7999;
-    // https.createServer(options, app).listen(PORT, () => {
-    app.listen(PORT, () => {
+    https.createServer(options, app).listen(PORT, () => {
+    // app.listen(PORT, () => {
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}/login`);
         console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
