@@ -50,14 +50,14 @@ let firebaseInitialized = false;
 
 try {
     // !!! 로컬로 할거면 if주석처리
-    // if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log('🔑 Firebase 환경변수 찾음!');
-        // const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         // \\n을 \n줄바꿈으로 바꾸는코드.
-        // serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
 
         // 로컬환경
-        const serviceAccount = require('../eroom.json');
+        // const serviceAccount = require('../eroom.json');
 
         if (!admin.apps.length) {
             admin.initializeApp({
@@ -68,7 +68,7 @@ try {
             db = admin.firestore();
             console.log('✅ Firebase Admin SDK 초기화 성공 (환경변수)');
         }
-    // }
+    }
 } catch (error) {
     console.error('❌ Firebase 초기화 오류:', error.message);
     console.log('💡 Firebase 기능은 비활성화됩니다.');
