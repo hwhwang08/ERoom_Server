@@ -594,11 +594,11 @@
                     const userDoc = await db.collection('User').doc(uid).get();
                     if (userDoc.exists) {
                         const userData = userDoc.data();
-                        console.log('🎉 Firestore에서 가져온 displayName:', userData.displayName);
-                        userIdSpan.textContent = userData.displayName;
+                        console.log('🎉 Firestore에서 가져온 DisplayName:', userData.DisplayName);
+                        userIdSpan.textContent = userData.DisplayName;
                     } else console.log('⚠️ 웹사이트에 가입되지 않은 사용자:', uid);
                 } catch (error) {
-                    console.error('❌ Firestore에서 displayName을 불러오는 중 오류:', error);
+                    console.error('❌ Firestore에서 DisplayName을 불러오는 중 오류:', error);
                 }
 
             } catch (err) {
