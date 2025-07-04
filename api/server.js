@@ -500,7 +500,7 @@ app.post('/webhook', async (req, res) => {
                     // 예: 크레딧 차감 처리 (선택 사항)
                     const hadCredits = userData.credits || 0;
                     console.log('현재 갖고 있는 크레딧: ', hadCredits);
-                    const newCredits = Math.max(0, hadCredits - (credits || 0);
+                    const newCredits = Math.max(0, hadCredits - (credits || 0));
 
                     await userRef.update({ credits: newCredits });
                     console.log('남은 크레딧 : ', newCredits);
@@ -513,7 +513,6 @@ app.post('/webhook', async (req, res) => {
         console.error('❌ 환불 처리 중 오류:', error);
         return res.status(500).send({ success: false, message: '서버 오류' });
     }
-
 });
 
 // 에러 처리
