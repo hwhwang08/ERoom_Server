@@ -551,18 +551,18 @@ console.log(`💳 아임포트: ${IMP_API_KEY ? '설정됨' : '미설정'}`);
 module.exports = app;
 
 // 로컬테스트용 https
-const https = require('https');
-
-const options = {
-    key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
-    cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
-};
+// const https = require('https');
+//
+// const options = {
+//     key: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4-key.pem')),
+//     cert: fs.readFileSync(path.resolve(__dirname, '../mylocal.dev+4.pem'))
+// };
 
 // || 7999와 https는 로컬 개발용
 if (require.main === module) {
     const PORT = process.env.PORT || 7999;
-    https.createServer(options, app).listen(PORT, () => {
-    // app.listen(PORT, () => {
+    // https.createServer(options, app).listen(PORT, () => {
+    app.listen(PORT, () => {
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
         console.log(`✅ 서버 실행 중: http://localhost:${PORT}/login`);
         console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
