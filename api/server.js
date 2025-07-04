@@ -365,7 +365,7 @@ app.post('/verify-and-store-payment', async (req, res) => {
         let currentCredit = 0;
         if (userSnap.exists) {
             const userData = userSnap.data();
-            currentCredit = userData.Credits || 0;
+            currentCredit = userData.credits || 0;
             console.log('✅ 현재 유저 크레딧:', currentCredit);
             console.log('💰 새로 산 크레딧:', creditAmount);
         }
