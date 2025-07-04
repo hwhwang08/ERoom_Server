@@ -594,19 +594,17 @@
                     const userDoc = await db.collection('User').doc(uid).get();
                     if (userDoc.exists) {
                         const userData = userDoc.data();
-                        console.log('🎉 Firestore에서 가져온 DisplayName:', userData.DisplayName);
-                        userIdSpan.textContent = userData.DisplayName;
+                        console.log('🎉 Firestore에서 가져온 displayName:', userData.displayName);
+                        userIdSpan.textContent = userData.displayName;
                     } else console.log('⚠️ 웹사이트에 가입되지 않은 사용자:', uid);
-                } catch (error) {
-                    console.error('❌ Firestore에서 DisplayName을 불러오는 중 오류:', error);
-                }
+                } catch (error) { console.error('❌ Firestore에서 displayName을 불러오는 중 오류:', error); }
 
             } catch (err) {
                 console.error('UID를 불러오는 중 오류:', err);
                 console.error('에러코드', err.code);
                 console.error('에러메시지', err.message);
             }
-            // if (!uid) return window.location.href = '/login';
+            if (!uid) return window.location.href = '/login';
         }
 
         // 만약 크레딧이 선택됐을 경우 자동 선택
@@ -678,9 +676,7 @@
                 await savePaymentToFirebase(response.paymentData, response.nickname);
                 console.log("설마 늦어서 그러냐")
                 redirectSuccess(response.paymentData, response.nickname);
-            } else {
-                alert('❌ 사용자 검증 실패: ' + response.message);
-            }
+            } else alert('❌ 사용자 검증 실패: ' + response.message);
         } catch (error) {
             console.error("❌ 서버 통신 실패:", error);
             alert('서버 오류가 발생했습니다.');
@@ -763,7 +759,7 @@
             amount: amount,
             buyer_email: currentUserEmail,
             buyer_name: currentUserName,
-            custom_data: {  uid: uid }
+            custom_data: { uid: uid }
         }, function (rsp) {
             console.log('=== 아임포트 응답 전체 ===');
             console.log('포트사 거래번호:', rsp.imp_uid);
