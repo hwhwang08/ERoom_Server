@@ -452,27 +452,37 @@ app.post('/webhook', async (req, res) => {
             return res.status(404).send({ success: false, message: '결제 기록 없음' });
         }
 
-        const docs = querySnapshot.docs;
-
-        // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
-        for (const doc of docs) {
-            const paymentData = doc.data();
-            console.log("유저 데이터.", doc.data())
-            const userUid = paymentData.userUid;  // 유저 식별자
-            console.log("유저 userUid.", userUid)
-            console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
-            const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
-            console.log("크레딧개수",credits);
-            const paymentRef = db.collection('Log').doc(doc.id);
-            console.log("혹시 모를ㄹ 출력", paymentRef)
-
-            if (status === 'paid') {
+        if (status === 'paid') {
+            // 여러 문서가 있을 수 있으니 하나씩 처리 (보통은 하나임)
+            for (const doc of querySnapshot.docs) {
+                const paymentRef = db.collection('Log').doc(doc.id);
+                console.log("혹시 모를ㄹ 출력", paymentRef)
                 await paymentRef.update({
                     paymentStatus: 'paid',
                     paidAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
                 console.log(`💳 결제 성공 처리 완료: ${imp_uid}`);
-            } else if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+
+                const paymentData = doc.data();
+                console.log("유저 데이터.", doc.data())
+                const userUid = paymentData.userUid;  // 유저 식별자
+                console.log("유저 userUid.", userUid)
+                console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
+                const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
+                console.log("크레딧개수", credits);
+            }
+
+        } else if (['cancelled', 'refunded'].includes(status.toLowerCase())) {
+            for (const doc of querySnapshot.docs) {
+                const paymentData = doc.data();
+                console.log("유저 데이터.", doc.data())
+                const userUid = paymentData.userUid;  // 유저 식별자
+                console.log("유저 userUid.", userUid)
+                console.log("유저 ㄷ[ㅌ", paymentData.timestamp)
+                const credits = paymentData.creditAmount // 로그에서 가져온 크레딧 개수
+                console.log("크레딧개수", credits);
+                const paymentRef = db.collection('Log').doc(doc.id);
+
                 // 파베 로그 환불 처리
                 await paymentRef.update({
                     paymentStatus: 'refunded',
@@ -490,16 +500,15 @@ app.post('/webhook', async (req, res) => {
                     // 예: 크레딧 차감 처리 (선택 사항)
                     const hadCredits = userData.credits || 0;
                     console.log('현재 갖고 있는 크레딧: ', hadCredits);
-                    const refundAmount = credits || 0;
-                    console.log('빠질 크레딧', refundAmount);
-                    const newCredits = Math.max(0, hadCredits - refundAmount);
-                    console.log(newCredits);
+                    const newCredits = Math.max(0, hadCredits - (credits || 0);
+
                     await userRef.update({ credits: newCredits });
+                    console.log('남은 크레딧 : ', newCredits);
                 } else console.warn('❗환불 대상 유저 정보를 찾을 수 없습니다:', userUid);
                 console.log(`환불 처리 완료: ${imp_uid} 사용자: ${userUid}`);
             }
         }
-        return res.status(200).send({ success: true, message: '환불 처리 완료' });
+        return res.status(200).send({ success: true, message: '처리 완료' });
     } catch (error) {
         console.error('❌ 환불 처리 중 오류:', error);
         return res.status(500).send({ success: false, message: '서버 오류' });
