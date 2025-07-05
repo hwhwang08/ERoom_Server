@@ -339,7 +339,11 @@ app.post('/verify-and-store-payment', async (req, res) => {
 
         // 🔐 결제 진위 검증 로직도 추가하는 게 좋음 (ex. 아임포트 REST API로 imp_uid 검증)
         const now = new Date();
-        const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, ':').replace(/\..+/, '') + now.getMilliseconds();
+
+        // 원하는 포맷: "2025-07-05-15:42:49"
+        const pad = (n) => n.toString().padStart(2, '0');
+        const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        // const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, ':').replace(/\..+/, '') + now.getMilliseconds();
 
         const paymentDocument = {
             userUid: uid,
@@ -352,11 +356,12 @@ app.post('/verify-and-store-payment', async (req, res) => {
             creditAmount: parseInt(creditAmount),
             paymentStatus: 'completed',
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            timestamp: 'payment_' + now.toISOString()
+            timestamp: now.toISOString(),
+            type: 'payment'
         };
 
         // 💾 1. 결제 로그 저장
-        await admin.firestore().collection('Log').doc('payment_' + timestamp).set(paymentDocument);
+        await admin.firestore().collection('Log').doc(timestamp).set(paymentDocument);
 
         // 💰 2. User 컬렉션에서 해당 유저의 기존 credit을 가져오기
         const userRef = admin.firestore().collection('User').doc(uid);
@@ -555,8 +560,8 @@ if (require.main === module) {
     const PORT = process.env.PORT || 7999;
     // https.createServer(options, app).listen(PORT, () => {
     app.listen(PORT, () => {
-        console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
-        console.log(`✅ 서버 실행 중: http://localhost:${PORT}/login`);
-        console.log(`🔍 헬스체크: http://localhost:${PORT}/health`);
+        console.log(`✅ 서버 실행 중: https://localhost:${PORT}`);
+        console.log(`✅ 서버 실행 중: https://localhost:${PORT}/login`);
+        console.log(`🔍 헬스체크: https://localhost:${PORT}/health`);
     });
 }
