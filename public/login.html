@@ -175,7 +175,7 @@
             <span id="button-text">로그인</span>
             <div class="loader" id="loader"></div>
         </button>
-        <button id="google-login-btn">Google 계정으로 로그인</button>
+        <button id="google-login-btn" type="button">Google 계정으로 로그인</button>
     </form>
 </div>
 
@@ -303,6 +303,7 @@
 
     // Google 로그인 버튼 클릭 시
     document.getElementById('google-login-btn').addEventListener('click', async () => {
+        e.preventDefault(); // 폼 제출 방지
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             const result = await auth.signInWithPopup(provider);
