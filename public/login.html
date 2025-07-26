@@ -302,7 +302,7 @@
     });
 
     // Google 로그인 버튼 클릭 시
-    document.getElementById('google-login-btn').addEventListener('click', async () => {
+    document.getElementById('google-login-btn').addEventListener('click', async (e) => {
         e.preventDefault(); // 폼 제출 방지
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
